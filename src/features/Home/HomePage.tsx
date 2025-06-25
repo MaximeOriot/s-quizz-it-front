@@ -8,7 +8,7 @@ function HomePage() {
         Découvrez le plaisir d'apprendre avec <span className="text-blue-600">S-quizz-it</span> !!!
       </div>
       <div>
-        <img src={logo} alt="Logo S-quizz-it" className="w-[300px]" />
+        <img src={logo} alt="Logo S-quizz-it" className="w-[300px] h-auto" />
       </div>
     </div>
   );
