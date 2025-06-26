@@ -21,7 +21,7 @@
     background-repeat: no-repeat;
     background-size: cover;
     background-attachment: fixed;
-    font-family: 'SyneBold', sans-serif;
+    @apply text-foreground px-8 py-16;
   }
 
   .title {
