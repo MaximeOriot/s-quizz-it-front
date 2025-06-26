@@ -6,7 +6,7 @@ function HomePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col-reverse lg:flex-row justify-center items-center lg:h-screen px-8 py-16">
+    <div className="flex flex-col-reverse lg:flex-row justify-center items-center lg:h-screen">
       
         <div className="flex flex-col gap-4 items-center">
           <div className="title max-w-xl">

@@ -22,6 +22,7 @@
     background-size: cover;
     background-attachment: fixed;
     @apply text-foreground px-8 py-16;
+    font-family: 'FamiljenGrotesk', sans-serif;
   }
 
   .title {
@@ -33,10 +34,20 @@
     @apply text-2xl md:text-4xl text-foreground;
     font-family: 'FamiljenGrotesk', sans-serif;
   }
+
+  .font-familjen {
+    font-family: 'FamiljenGrotesk', sans-serif;
+  }
+
+  .font-syne {
+    font-family: 'SyneBold', sans-serif;
+  }
 }
 
 @layer base {
   :root {
+    --font-familjen: "FamiljenGrotesk", "sans-serif" !important;
+    --font-syne: "SyneBold", "sans-serif" !important;
     --background: linear-gradient(to bottom, #03BDEB 20%, #1A4BA8 100%);
     --foreground: #381664;
     --muted: 52 10% 95%;
