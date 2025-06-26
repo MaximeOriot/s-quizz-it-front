@@ -2,4 +2,6 @@
 @font-face {
     font-family: 'SyneBold';
     src: url('./assets/fonts/syne/Syne-Bold.ttf');
+    font-weight: normal;
+    font-style: normal;
 }
