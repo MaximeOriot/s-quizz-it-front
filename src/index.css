@@ -1,5 +1,15 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @font-face {
     font-family: 'SyneBold';
-    src: url('./assets/fonts/syne/Syne-Bold.ttf');
+    src: url('/src/assets/fonts/syne/Syne-Bold.ttf') format('truetype');
+    font-display: swap;
+}
+
+@layer components {
+  .font-syne-bold {
+    font-family: 'SyneBold', sans-serif !important;
+  }
 }
