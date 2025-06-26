@@ -4,14 +4,38 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  safelist: [
+    'font-title',
+    'font-body',
+  ],
   theme: {
     extend: {
-      fontFamily: {
-        'syne-bold': ['SyneBold', 'sans-serif'],
-        'syne': ['SyneBold', 'sans-serif'],
+      borderRadius: {
+        DEFAULT: 'var(--radius)',
       },
+      colors: {
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        primary: 'var(--primary)',
+        'primary-foreground': 'var(--primary-foreground)',
+        secondary: 'var(--secondary)',
+        'secondary-foreground': 'var(--secondary-foreground)',
+        accent: 'hsl(var(--accent))',
+        'accent-foreground': 'hsl(var(--accent-foreground))',
+        muted: 'hsl(var(--muted))',
+        'muted-foreground': 'hsl(var(--muted-foreground))',
+        destructive: 'hsl(var(--destructive))',
+        'destructive-foreground': 'hsl(var(--destructive-foreground))',
+        ring: 'hsl(var(--ring))',
+        card: 'hsl(var(--card))',
+        'card-foreground': 'hsl(var(--card-foreground))',
+        // Ajoute tes chart-colors ici aussi si besoin
+      },
+      fontFamily: {
+        title: ['SyneBold', 'sans-serif'],
+        body: ['FamiljenGrotesk', 'sans-serif'],
+      }
     },
   },
   plugins: [],
 }
-
