@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: 'SyneBold';
+    src: url('/src/assets/fonts/syne/Syne-Bold.ttf') format('truetype');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'FamiljenGrotesk';
+    src: url('/src/assets/fonts/familjen-grotesk/FamiljenGrotesk-Regular.ttf') format('truetype');
+    font-display: swap;
+}
+
+@layer components {
+
+  body {
+    background: var(--background);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+    @apply text-foreground px-8 py-16;
+  }
+
+  .title {
+    @apply text-4xl md:text-6xl text-foreground;
+    font-family: 'SyneBold', sans-serif;
+  }
+
+  .subtitle {
+    @apply text-2xl md:text-4xl text-foreground;
+    font-family: 'FamiljenGrotesk', sans-serif;
+  }
+}
+
+@layer base {
+  :root {
+    --background: linear-gradient(to bottom, #03BDEB 20%, #1A4BA8 100%);
+    --foreground: #381664;
+    --muted: 52 10% 95%;
+    --muted-foreground: 52 4% 31%;
+    --popover: 0 0% 99%;
+    --popover-foreground: 232 64% 3%;
+    --border: 232 3% 93%;
+    --input: #FFF9C5;
+    --primary: #FBE72A;
+    --primary-foreground: #FFF9C5;
+    --secondary: #381664;
+    --secondary-foreground: #440A8F;
+    --accent: 52 98% 56%;
+    --accent-foreground: 52 98% 16%;
+    --destructive: 12 87% 23%;
+    --destructive-foreground: 12 87% 83%;
+    --radius: 1rem;
+  }
+}
