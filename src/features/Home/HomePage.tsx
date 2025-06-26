@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import logo from '../../assets/logo-squizzit-removed-bg.png';
-import Button from '../../components/Button';
 import AuthModal from '../../components/AuthenticationModal';
+import Button from '../../components/ui/Button';
+import { useNavigate } from 'react-router-dom';
 
 function HomePage() {
+  const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [onRegister, setOnRegister] = useState(false);
   const [isLogged, setIsLogged] = useState(false);
@@ -12,6 +14,8 @@ function HomePage() {
     if(!isLogged){
       setOnRegister(false)
       setShowAuthModal(true)
+    } else {
+      navigate('/Play')
     }
   };
   const onAuthClick = (isRegister: boolean) => {
@@ -25,55 +29,51 @@ function HomePage() {
   };
 
   return (
-    <div className="relative h-screen w-full bg-gradient-to-b from-sky-300 to-sky-800 flex flex-col items-center justify-center px-8 py-6 overflow-hidden">
+    <div className="flex flex-col-reverse items-center justify-center px-8 py-16 lg:flex-row lg:h-screen">
       
-      <div className="absolute top-6 right-6 flex gap-4">
+      <div className="absolute flex gap-4 top-6 right-6">
         <Button
           onClick={() => onAuthClick(false)}
-          label="Connexion"
-          bgColor="bg-yellow-400"
-          textColor="text-blue-900"
-          hoverColor="hover:bg-yellow-300"
-        />
+          variant='primary'
+          textSize='md'
+          className='mt-8'
+          width='6xl'
+        >
+          Connexion
+        </Button>
         <Button
           onClick={() => onAuthClick(true)}
-          label="Inscription"
-          bgColor="bg-yellow-400"
-          textColor="text-blue-900"
-          hoverColor="hover:bg-yellow-300"
-        />
+          variant='primary'
+          textSize='md'
+          className='mt-8'
+          width='6xl'
+        >
+          Inscription
+        </Button>
       </div>
 
-      <div className="flex flex-col lg:flex-row items-center justify-center gap-12 mt-16">
-        <div className="text-left text-4xl md:text-5xl font-bold text-indigo-950 leading-tight">
-          <p>Le quiz</p>
-          <p>qui met</p>
-          <p>l’ambiance,</p>
-          <p>et la pression !</p>
-        </div>
+      <div className="flex flex-col items-center gap-4">
+        <div className="max-w-xl title">
+            Le quiz qui met l'ambiance, et la pression !
+          </div>
+          <div className="max-w-xl subtitle">
+            Chaque seconde compte. Chaque erreur se paie. Bienvenue dans le quiz où seul le plus vif survit.
+          </div>
 
-        <img
-          src={logo}
-          alt="Logo S-quizz-it"
-          className="w-[300px] md:w-[400px] h-auto"
-        />
+          <Button variant="primary" textSize="lg" className="mt-8" width="6xl" onClick={onPlay}>
+            Jouer 
+          </Button>
+
+          <img src={logo} alt="Logo S-quizz-it" className="w-[500px] h-auto" />
       </div>
 
-      <div className="mt-10">
-        <Button
-          onClick={onPlay}
-          label="Jouer"
-          bgColor="bg-yellow-400"
-          textColor="text-blue-900"
-          hoverColor="hover:bg-yellow-300"
-        />
-      </div>
       <AuthModal 
         isOpen={showAuthModal} 
         isRegister={onRegister} 
         onClose={() => setShowAuthModal(false)} 
         onLoginSuccess={onLoginSuccess}
       />
+      
     </div>
   );
 }
