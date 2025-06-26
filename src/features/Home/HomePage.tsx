@@ -1,15 +1,26 @@
-import './HomePage.css'
 import logo from '../../assets/logo-squizzit-removed-bg.png';
+import Button from '../../components/ui/Button';
+import { useNavigate } from 'react-router-dom';
 
 function HomePage() {
+  const navigate = useNavigate();
+
   return (
-    <div className="container flex items-center justify-between h-screen px-12 bg-gradient-to-b from-sky-300 to-sky-800">
-      <div className="text-3xl font-bold max-w-xl">
-        Découvrez le plaisir d'apprendre avec <span className="text-blue-900">S-quizz-it</span> !!!
-      </div>
-      <div>
-        <img src={logo} alt="Logo S-quizz-it" className="w-[300px] h-auto" />
-      </div>
+    <div className="flex flex-col-reverse lg:flex-row justify-center items-center lg:h-screen px-8 py-16">
+      
+        <div className="flex flex-col gap-4 items-center">
+          <div className="title max-w-xl">
+            Le quiz qui met l'ambiance, et la pression !
+          </div>
+          <div className="subtitle max-w-xl">
+            Chaque seconde compte. Chaque erreur se paie. Bienvenue dans le quiz où seul le plus vif survit.
+          </div>
+          <Button variant="primary" textSize="lg" className="mt-8" width="6xl" onClick={() => navigate('/Play')}>
+            Jouer 
+          </Button>
+        </div>
+
+      <img src={logo} alt="Logo S-quizz-it" className="w-[500px] h-auto" />
     </div>
   );
 }
