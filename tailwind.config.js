@@ -29,7 +29,7 @@ export default {
         ring: 'hsl(var(--ring))',
         card: 'hsl(var(--card))',
         'card-foreground': 'hsl(var(--card-foreground))',
-        // Ajoute tes chart-colors ici aussi si besoin
+        input: 'var(--input)',
       },
       fontFamily: {
         title: ['SyneBold', 'sans-serif'],

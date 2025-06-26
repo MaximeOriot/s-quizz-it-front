@@ -21,6 +21,7 @@
     background-repeat: no-repeat;
     background-size: cover;
     background-attachment: fixed;
+    font-family: 'SyneBold', sans-serif;
   }
 
   .title {
@@ -52,6 +53,6 @@
     --accent-foreground: 52 98% 16%;
     --destructive: 12 87% 23%;
     --destructive-foreground: 12 87% 83%;
-    --radius: 0.5rem;
+    --radius: 1rem;
   }
 }
