@@ -29,7 +29,7 @@ function HomePage() {
   };
 
   return (
-    <div className="flex flex-col-reverse items-center justify-center px-8 py-16 lg:flex-row lg:h-screen">
+    <div className="flex flex-col-reverse lg:flex-row justify-center items-center lg:h-screen">
       
       <div className="absolute flex gap-4 top-6 right-6">
         <Button

@@ -32,8 +32,8 @@ export default {
         input: 'var(--input)',
       },
       fontFamily: {
-        title: ['SyneBold', 'sans-serif'],
-        body: ['FamiljenGrotesk', 'sans-serif'],
+        syne: ['SyneBold', 'sans-serif'],
+        familjen: ['FamiljenGrotesk', 'sans-serif'],
       }
     },
   },
