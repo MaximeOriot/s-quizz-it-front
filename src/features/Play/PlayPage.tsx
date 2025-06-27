@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import Bento from '../../components/ui/Bento';
+import Header from '../../components/ui/Header';
 
 function PlayPage() {
   const navigate = useNavigate();
@@ -72,8 +73,9 @@ function PlayPage() {
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6">
-        <div className="title text-center">
+    <div className="flex flex-col gap-6 justify-center items-center">
+        <Header playerName="TonNom" />
+        <div className="text-center lg:my-6 title">
             Que veux-tu faire ?
         </div>
         

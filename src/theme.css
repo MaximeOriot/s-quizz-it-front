@@ -21,8 +21,12 @@
     background-repeat: no-repeat;
     background-size: cover;
     background-attachment: fixed;
-    @apply text-foreground px-8 py-8 md:py-12;
+    @apply text-foreground px-8;
     font-family: 'FamiljenGrotesk', sans-serif;
+  }
+
+  .home-page {
+      @apply text-foreground py-8 md:py-12;
   }
 
   .title {
