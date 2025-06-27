@@ -21,17 +21,21 @@
     background-repeat: no-repeat;
     background-size: cover;
     background-attachment: fixed;
-    @apply text-foreground px-8 py-16;
+    @apply text-foreground px-8;
     font-family: 'FamiljenGrotesk', sans-serif;
   }
 
+  .home-page {
+      @apply text-foreground py-8 md:py-12;
+  }
+
   .title {
-    @apply text-4xl md:text-6xl text-foreground;
+    @apply text-3xl md:text-6xl text-foreground;
     font-family: 'SyneBold', sans-serif;
   }
 
   .subtitle {
-    @apply text-2xl md:text-4xl text-foreground;
+    @apply text-2xl md:text-4xl text-foreground italic;
     font-family: 'FamiljenGrotesk', sans-serif;
   }
 
