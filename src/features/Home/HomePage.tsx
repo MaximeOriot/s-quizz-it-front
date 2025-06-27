@@ -29,14 +29,13 @@ function HomePage() {
   };
 
   return (
-    <div className="flex flex-col-reverse items-center justify-center px-8 py-16 lg:flex-row lg:h-screen">
-      
-      <div className="absolute flex gap-4 top-6 right-6">
+    <div className="flex flex-col items-center justify-center px-4">
+
+       <div className="flex flex-row-reverse gap-4 w-full">
         <Button
           onClick={() => onAuthClick(false)}
           variant='primary'
           textSize='md'
-          className='mt-8'
           width='6xl'
         >
           Connexion
@@ -45,26 +44,42 @@ function HomePage() {
           onClick={() => onAuthClick(true)}
           variant='primary'
           textSize='md'
-          className='mt-8'
           width='6xl'
         >
           Inscription
         </Button>
       </div>
 
-      <div className="flex flex-col items-center gap-4">
-        <div className="max-w-xl title">
-            Le quiz qui met l'ambiance, et la pression !
-          </div>
-          <div className="max-w-xl subtitle">
-            Chaque seconde compte. Chaque erreur se paie. Bienvenue dans le quiz où seul le plus vif survit.
+      <div className="flex flex-col items-center justify-center w-full max-w-5xl my-12 lg:my-36">
+        <div className="flex flex-col items-center justify-center mb-12 lg:relative lg:block">
+          <img
+            src={logo}
+            alt="Logo S-quizz-it"
+            className="w-[550px] h-auto float-right lg:-mt-16 lg:-mb-6 lg:mx-[-5rem]"
+          />
+          <div className="title text-left lg:text-[4.5rem] lg:leading-[1.1]">
+            Le quiz qui met l'ambiance, et la <span className="text-primary">pression !</span>
           </div>
 
-          <Button variant="primary" textSize="lg" className="mt-8" width="6xl" onClick={onPlay}>
+          <div className="hidden lg:flex w-full flex justify-end">
+            <Button
+              variant="primary"
+              textSize="lg"
+              width="6xl"
+              onClick={onPlay}
+            >
+              Jouer
+            </Button>
+          </div>
+      </div>
+
+        <div className="subtitle w-full">
+            Chaque seconde compte. Chaque erreur se paie.
+        </div>
+
+        <Button variant="primary" textSize="lg" className="mt-8 lg:hidden" width="6xl" onClick={onPlay}>
             Jouer 
-          </Button>
-
-          <img src={logo} alt="Logo S-quizz-it" className="w-[500px] h-auto" />
+        </Button>
       </div>
 
       <AuthModal 
@@ -73,7 +88,6 @@ function HomePage() {
         onClose={() => setShowAuthModal(false)} 
         onLoginSuccess={onLoginSuccess}
       />
-      
     </div>
   );
 }
