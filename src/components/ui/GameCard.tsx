@@ -7,6 +7,7 @@ interface GameCardProps {
   tagPosition?: 'left' | 'center' | 'right' | 'none';
   variant: 'primary' | 'secondary';
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  height?: string;
   className?: string;
   onClick?: () => void;
   hover?: boolean;
@@ -19,6 +20,7 @@ const GameCard: React.FC<GameCardProps> = ({
   tagPosition = 'center',
   variant,
   padding = 'md',
+  height,
   className = '',
   onClick,
   hover = false,
@@ -37,6 +39,13 @@ const GameCard: React.FC<GameCardProps> = ({
     lg: 'p-8',
   };
   
+  const tagPositionClasses = {
+    left: 'left-[-10px] pl-6',
+    center: 'left-1/2 transform -translate-x-1/2',
+    right: 'right-[-12px] pr-10',
+    none: 'left-8 text-center',
+  };
+  
   const hoverClasses = hover ? 'hover:scale-105 hover:shadow-xl cursor-pointer' : '';
   const clickableClasses = onClick ? 'cursor-pointer' : '';
   
@@ -46,15 +55,9 @@ const GameCard: React.FC<GameCardProps> = ({
     paddingClasses[padding],
     hoverClasses,
     clickableClasses,
+    height,
     className
   ].filter(Boolean).join(' ');
-
-  const tagPositionClasses = {
-    left: 'left-[-10px] pl-6',
-    center: 'left-1/2 transform -translate-x-1/2',
-    right: 'right-[-12px] pr-10',
-    none: 'left-8 text-center',
-  };
 
   return (
     <div 
