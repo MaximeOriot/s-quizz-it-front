@@ -3,6 +3,7 @@ import HomePage from "../features/Home/HomePage";
 import PlayPage from "../features/Play/PlayPage";
 import ScorePage from "../features/Score/ScorePage";
 import WaitingRoom from "../features/Waiting/WaitingRoom";
+import GamePage from "../features/Game/GamePage";
 
 export const router = createBrowserRouter([
     {
@@ -20,5 +21,9 @@ export const router = createBrowserRouter([
     {
         path: '/waitingRoom', 
         element: <WaitingRoom />,
+    },
+    {
+        path: '/game', 
+        element: <GamePage />,
     }
 ]);
