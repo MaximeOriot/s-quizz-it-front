@@ -1,11 +1,12 @@
 import { createBrowserRouter } from "react-router-dom";
 import HomePage from "../features/Home/HomePage";
 import PlayPage from "../features/Play/PlayPage";
+import ScorePage from "../features/Score/ScorePage";
 import WaitingRoom from "../features/Waiting/WaitingRoom";
 
 export const router = createBrowserRouter([
     {
-        path: '/aa',
+        path: '/',
         element: <HomePage />,
     },
     {
@@ -13,7 +14,10 @@ export const router = createBrowserRouter([
         element: <PlayPage />,
     },
     {
-        path: '/', //Todo: remettre les bons path avant de merge
+        path: '/score',
+        element: <ScorePage />,
+      
+        path: '/waitingRoom', 
         element: <WaitingRoom />,
     },
 ]);
