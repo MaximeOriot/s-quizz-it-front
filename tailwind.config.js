@@ -20,6 +20,7 @@ export default {
         'primary-foreground': 'var(--primary-foreground)',
         secondary: 'var(--secondary)',
         'secondary-foreground': 'var(--secondary-foreground)',
+        thirdary: 'var(--thirdary)',
         accent: 'hsl(var(--accent))',
         'accent-foreground': 'hsl(var(--accent-foreground))',
         muted: 'hsl(var(--muted))',
