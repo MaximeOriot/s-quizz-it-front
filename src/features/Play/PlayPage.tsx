@@ -1,9 +1,29 @@
 import { useNavigate } from 'react-router-dom';
 import Bento from '../../components/ui/Bento';
 import Header from '../../components/ui/Header';
+import { useDispatch, useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { getAuthenticatedUserThunk } from '../auth/authThunks';
 
 function PlayPage() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user, isAuthenticated, loading } = useSelector((state: any) => state.auth);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    
+    // Si on n'a pas de données utilisateur en state mais qu'on a un token
+    if (!user && !isAuthenticated && token) {
+      dispatch(getAuthenticatedUserThunk());
+    }
+    
+    // Si on n'a pas de token, l'utilisateur est en mode invité
+    if (!token) {
+      console.log('Utilisateur en mode invité');
+      // Optionnel: vous pouvez définir un état pour gérer le mode invité
+    }
+  }, [dispatch, user, isAuthenticated]);
 
   const bentoItems = [
     {
@@ -74,7 +94,7 @@ function PlayPage() {
 
   return (
     <div className="flex flex-col gap-6 justify-center items-center">
-        <Header playerName="TonNom" />
+        <Header playerName= {localStorage.getItem('username')} />
         <div className="text-center lg:my-6 title">
             Que veux-tu faire ?
         </div>
