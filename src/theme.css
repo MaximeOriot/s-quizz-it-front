@@ -14,6 +14,23 @@
     font-display: swap;
 }
 
+.recharts-legend-item-text {
+  color: var(--foreground) !important;
+}
+
+.recharts-legend-wrapper {
+  color: var(--foreground) !important;
+}
+
+.recharts-tooltip-cursor {
+  fill: transparent !important;
+}
+
+.recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line {
+  stroke: var(--foreground) !important;
+  display: none !important;
+}
+
 @layer components {
 
   body {
