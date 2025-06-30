@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure } from '../features/auth/authSlice';
 import { loginThunk, registerThunk } from '../features/auth/authThunks';
+import { useNavigate } from "react-router-dom";
 
 type AuthModalProps = {
   isOpen: boolean;
@@ -15,6 +15,7 @@ export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess 
 
     const { user, isAuthenticated, loading, error } = useSelector((state: any) => state.auth);
     const dispatch = useDispatch();
+    const navigate = useNavigate();
   
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -46,27 +47,19 @@ export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess 
         return;
       }
 
-      if (isOnRegister) {
-        // Inscription
-        dispatch(loginStart({ email, password }));
-        try {
-          dispatch(registerThunk({ email, password, username }));
-          dispatch(loginSuccess(user));
-          onLoginSuccess(); // Appel de la fonction de succès après l'inscription
-        } catch (err) {
-          dispatch(loginFailure('Erreur d\'inscription'));
-        }
-        return;
-      }
-
-      // Connexion
-      dispatch(loginStart({ email, password }));
       try {
-        dispatch(loginThunk({ email, password }));
-        dispatch(loginSuccess(user));
-        onLoginSuccess(); // Appel de la fonction de succès après la connexion
+        if (isOnRegister) {
+          // Inscription
+          await dispatch(registerThunk({ email, password, username })).unwrap();
+        } else {
+          // Connexion
+          await dispatch(loginThunk({ email, password })).unwrap();
+        }
+        
+        navigate('/play');
       } catch (err) {
-        dispatch(loginFailure('Erreur de connexion'));
+        console.error(err);
+        alert('Une erreur est survenue. Veuillez vérifier vos informations.');
       }
     };
 

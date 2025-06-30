@@ -4,22 +4,31 @@ import { loginStart, loginSuccess, loginFailure } from './authSlice';
 // Thunk pour la connexion
 export const loginThunk = createAsyncThunk(
   'auth/login',
-  async ({ email, password }: { email: string; password: string }, { dispatch }) => {
+  async ({ email, password }: { email: string; password: string }, { dispatch, rejectWithValue }) => {
     dispatch(loginStart({ email, password }));
     try {
       const response = await fetch('https://backend-squizzit.dreadex.dev/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ email, password }).toString(),
+        body: new URLSearchParams({ email, password }).toString(),
       });
+      
       if (!response.ok) {
-        throw new Error('Erreur de connexion');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       const data = await response.json();
       localStorage.setItem('token', data.session.access_token);
+      if(!data.profile || !data.profile.pseudo) {
+      localStorage.setItem('username', 'meh'); // Valeur par défaut si pseudo non disponible
+      } else {
+      localStorage.setItem('username', data.profile.pseudo);
+      }
       dispatch(loginSuccess(data.user));
+      return data; // Retourner les données en cas de succès
     } catch (error: any) {
       dispatch(loginFailure(error.message));
+      return rejectWithValue(error.message); // Rejeter explicitement avec la valeur d'erreur
     }
   }
 );
@@ -40,6 +49,7 @@ export const registerThunk = createAsyncThunk(
         }
         const data = await response.json();
         localStorage.setItem('token', data.session.access_token);
+        localStorage.setItem('username', data.profile.pseudo);
         dispatch(loginSuccess(data.user));
         } catch (error: any) {
         dispatch(loginFailure(error.message));

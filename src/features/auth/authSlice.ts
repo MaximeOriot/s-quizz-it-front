@@ -48,6 +48,9 @@ const authSlice = createSlice({
       state.error = null;
       state.email = null;
       state.password = null;
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      console.log('Utilisateur déconnecté, état réinitialisé.');
     },
   },
 });

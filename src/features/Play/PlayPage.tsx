@@ -74,7 +74,7 @@ function PlayPage() {
 
   return (
     <div className="flex flex-col gap-6 justify-center items-center">
-        <Header playerName="TonNom" />
+        <Header playerName= {localStorage.getItem('username')} />
         <div className="text-center lg:my-6 title">
             Que veux-tu faire ?
         </div>
