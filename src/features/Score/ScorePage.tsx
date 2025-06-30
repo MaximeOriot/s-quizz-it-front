@@ -15,7 +15,7 @@ const data = [
 const ScorePage: React.FC = () => (
   <div>
     <Header playerName="Ton nom" />
-    <h2>Score de la semaine</h2>
+    <div className="my-4 text-lg font-bold lg:text-2xl">Score de la semaine</div>
     <ScoreGraph scores={data} />
   </div>
 );
