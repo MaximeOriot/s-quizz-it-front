@@ -16,8 +16,9 @@ export const router = createBrowserRouter([
     {
         path: '/score',
         element: <ScorePage />,
-      
+    },
+    {
         path: '/waitingRoom', 
         element: <WaitingRoom />,
-    },
+    }
 ]);
