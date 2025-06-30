@@ -57,24 +57,26 @@ export const registerThunk = createAsyncThunk(
     }
 );
 
-// Thunk pour récupérer l'utilisateur authentifié
 export const getAuthenticatedUserThunk = createAsyncThunk(
-    'auth/getAuthenticatedUser',
-    async (_, { dispatch }) => {
-        try {
-            const response = await fetch('https://backend-squizzit.dreadex.dev/api/auth', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-            });
-            if (!response.ok) {
-                throw new Error('Erreur lors de la récupération de l\'utilisateur');
-            }
-            const data = await response.json();
-            dispatch(loginSuccess(data.user));
-        } catch (error: any) {
-            dispatch(loginFailure(error.message));
-        }
-    });
+  'auth/getAuthenticatedUser',
+  async (_, { dispatch, rejectWithValue }) => {
+      try {
+          const response = await fetch('https://backend-squizzit.dreadex.dev/api/auth', {
+              method: 'GET',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+          });
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          dispatch(loginSuccess(data.user));
+          return data;
+      } catch (error: any) {
+          dispatch(loginFailure(error.message));
+          return rejectWithValue(error.message);
+      }
+  }
+);
