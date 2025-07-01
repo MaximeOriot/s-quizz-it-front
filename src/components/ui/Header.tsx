@@ -2,15 +2,44 @@ import React from 'react';
 import logo from '../../assets/logo-squizzit-removed-bg.png';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../features/auth/authSlice';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 interface HeaderProps {
-  playerName: string | null;
+  playerName?: string | null;
+}
+
+interface RootState {
+  auth: {
+    user: string | { name?: string; username?: string; display_name?: string; email?: string } | null;
+    isAuthenticated: boolean;
+  };
 }
 
 const Header: React.FC<HeaderProps> = ({ playerName }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
+  console.log(user);
+
+  // Extraire le nom d'utilisateur de l'objet user
+  const getUserName = (user: RootState['auth']['user']): string => {
+  console.log(user);
+    if (!user) return 'Invité';
+    
+    // Si c'est une chaîne, l'utiliser directement
+    if (typeof user === 'string') return user;
+    
+    // Si c'est un objet, essayer d'extraire le nom
+    if (typeof user === 'object') {
+      // Essayer différents champs possibles
+      return user.name ?? user.username ?? user.display_name ?? 'Invité';
+    }
+    
+    return 'Invité';
+  };
+
+  // Utiliser le prop playerName s'il est fourni, sinon utiliser localStorage, puis Redux
+  const displayName = playerName ?? localStorage.getItem('username') ?? getUserName(user) ?? 'Invité';
 
   const handleLogout = () => {
     // Dispatch logout action
@@ -32,7 +61,7 @@ const Header: React.FC<HeaderProps> = ({ playerName }) => {
                 Se déconnecter
               </button>
         <div className="text-lg font-semibold">
-          {playerName ? `Bienvenue, ${playerName}!` : 'Bienvenue, invité!'}
+          Bienvenue, {displayName}!
         </div>
       </div>
     </nav>

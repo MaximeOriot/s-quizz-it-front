@@ -160,7 +160,7 @@ export default function GamePage() {
 
   return (
     <div className="min-h-screen">
-      <Header playerName={user || playerName || localStorage.getItem('username') || 'Joueur'} />
+      <Header />
       
       <div className="container px-4 py-8 mx-auto">
         {/* En-tête de la question */}

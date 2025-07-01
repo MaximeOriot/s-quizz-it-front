@@ -2,15 +2,21 @@ import { useNavigate } from 'react-router-dom';
 import Bento from '../../components/ui/Bento';
 import Header from '../../components/ui/Header';
 import { useDispatch, useSelector } from 'react-redux';
-import { useEffect } from 'react';
-import { getAuthenticatedUserThunk } from '../auth/authThunks';
 import { prepareSoloGameQuestionThunk } from '../Game/gameThunks';
 import Button from '../../components/ui/Button';
+
+interface RootState {
+  auth: {
+    user: string | { email?: string; [key: string]: unknown } | null;
+    isAuthenticated: boolean;
+    loading: boolean;
+  };
+}
 
 function PlayPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user, isAuthenticated, loading } = useSelector((state: any) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   // useEffect(() => {
   //   const token = localStorage.getItem('token');
@@ -28,7 +34,23 @@ function PlayPage() {
   // }, [dispatch, user, isAuthenticated]);
 
   const handleSoloGame = async () => {
-    const playerName = localStorage.getItem('username');
+    // Récupérer le nom d'utilisateur depuis différentes sources
+    let playerName = localStorage.getItem('username');
+    
+    // Si pas de nom dans localStorage, essayer de le récupérer depuis Redux
+    if (!playerName && user) {
+      if (typeof user === 'string') {
+        playerName = user;
+      } else if (typeof user === 'object' && user.email) {
+        playerName = user.email;
+      }
+    }
+    
+    // Si toujours pas de nom, utiliser un nom par défaut pour les invités
+    if (!playerName) {
+      playerName = 'Invité';
+    }
+    
     const gameId = 'solo-' + Date.now(); // Génération d'un ID de jeu unique pour le mode solo
     
     try {
@@ -39,7 +61,7 @@ function PlayPage() {
       });
       
       // Attendre que les questions soient récupérées avant de naviguer
-      await dispatch(prepareSoloGameQuestionThunk());
+      await dispatch(prepareSoloGameQuestionThunk() as any);
       navigate('/game'); // Redirection vers la page de jeu
     } catch (error) {
       console.error('Erreur lors de la préparation du jeu solo:', error);
@@ -116,7 +138,7 @@ function PlayPage() {
 
   return (
     <div className="flex flex-col gap-6 justify-center items-center">
-        <Header playerName= {localStorage.getItem('username')} />
+        <Header />
         <div className="text-center lg:my-6 title">
             Que veux-tu faire ? 
         </div>
