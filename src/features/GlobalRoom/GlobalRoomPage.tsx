@@ -64,16 +64,16 @@ function GlobalRoom() {
     let socket: WebSocket;
     
     try {
-      socket = createWebSocket(
-        (data) => {
+      socket = createWebSocket({
+        onMessage: (data) => {
           if (data && typeof data === 'object' && 'type' in data && data.type === "salons_init" && 'salons' in data) {
             setRooms(data.salons as Room[]);
           }
         },
-        (error) => {
+        onError: (error) => {
           console.error("Erreur WebSocket:", error);
         }
-      );
+      });
     } catch (error) {
       console.error("Erreur lors de la création du WebSocket:", error);
     }
