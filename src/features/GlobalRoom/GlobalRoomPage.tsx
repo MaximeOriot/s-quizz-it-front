@@ -54,6 +54,12 @@ function GlobalRoom() {
     }
   };
 
+  const getButtonText = (room: Room) => {
+    if (room.commence) return "En cours";
+    if (room.j_actuelle >= room.j_max) return "Pleine";
+    return "Rejoindre";
+  };
+
   useEffect(() => {
     let socket: WebSocket;
     
@@ -144,8 +150,7 @@ function GlobalRoom() {
                 disabled={room.commence || room.j_actuelle >= room.j_max}
                 className="w-full"
               >
-                {room.commence ? "En cours" : 
-                 room.j_actuelle >= room.j_max ? "Pleine" : "Rejoindre"}
+                {getButtonText(room)}
               </Button>
             </div>
           ))}
