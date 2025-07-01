@@ -55,8 +55,8 @@ export default function GamePage() {
   }, [selectedAnswer]);
 
   // Redirection si pas authentifié ou pas de jeu en cours
-  useEffect(() => {
-    if (!isAuthenticated && !playerName) {
+ useEffect(() => {
+   if (!isAuthenticated && !playerName) {
       navigate('/play');
     }
     if (!isGameStarted || !questions || questions.length === 0) {
@@ -64,7 +64,9 @@ export default function GamePage() {
     }
   }, [isAuthenticated, playerName, isGameStarted, questions, navigate]);
 
-  // Fonction pour nettoyer le timer
+  
+
+// Fonction pour nettoyer le timer
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -73,7 +75,7 @@ export default function GamePage() {
   }, []);
 
   // Gestion du passage à la question suivante
-  const handleNextQuestion = useCallback(() => {
+ const handleNextQuestion = useCallback(() => {
     if (isAnswering) return; // Éviter les appels multiples
     
     setIsAnswering(true);
@@ -89,9 +91,8 @@ export default function GamePage() {
       navigate('/results', { state: { score, totalQuestions: questions.length } });
     }
   }, [currentQuestionIndex, questions.length, navigate, score, clearTimer, isAnswering]);
-
   // Timer pour chaque question - version améliorée
-  useEffect(() => {
+ useEffect(() => {
     // Nettoyer le timer précédent
     clearTimer();
     
@@ -121,7 +122,7 @@ export default function GamePage() {
   }, [currentQuestionIndex]); // Seulement se déclencher quand la question change
 
   // Gestion du clic sur une réponse
-  const handleAnswerClick = (answerIndex: number) => {
+   const handleAnswerClick = (answerIndex: number) => {
     if (selectedAnswer !== null || isAnswering) return; // Empêche la double sélection
 
     clearTimer(); // Arrêter le timer immédiatement
@@ -139,7 +140,7 @@ export default function GamePage() {
     }, 1500);
   };
 
-  // Cleanup au démontage du composant
+// Cleanup au démontage du composant
   useEffect(() => {
     return () => {
       clearTimer();
@@ -158,36 +159,36 @@ export default function GamePage() {
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen">
       <Header playerName={user || playerName || localStorage.getItem('username') || 'Joueur'} />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container px-4 py-8 mx-auto">
         {/* En-tête de la question */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="p-6 mb-6 rounded-lg shadow-md bg-secondary">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">
+            <h2 className="text-xl font-bold text-primary">
               Question {currentQuestionIndex + 1} / {questions.length}
             </h2>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Score: {score}</span>
-              <span className={`text-lg font-bold ${timeLeft <= 5 ? 'text-red-500' : 'text-blue-500'}`}>
+            <div className="flex gap-4 items-center">
+              <span className="text-sm text-primary">Score: {score}</span>
+              <span className={`text-lg font-bold ${timeLeft <= 5 ? 'text-red-500' : 'text-blue-400'}`}>
                 {timeLeft}s
               </span>
             </div>
           </div>
           
           {/* Barre de progression */}
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full h-2 rounded-full bg-primary">
             <div 
-              className="bg-blue-500 h-2 rounded-full transition-all duration-1000"
+              className="h-2 bg-blue-400 rounded-full transition-all duration-1000"
               style={{ width: `${(timeLeft / 20) * 100}%` }}
             ></div>
           </div>
         </div>
 
         {/* Question */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-lg font-medium mb-6">{currentQuestion.label}</h3>
+        <div className="p-6 mb-6 rounded-lg shadow-md bg-secondary-foreground">
+          <h3 className="mb-6 text-lg font-medium text-primary">{currentQuestion.label}</h3>
           
           {/* Réponses */}
           <div className="grid gap-3">
@@ -204,7 +205,7 @@ export default function GamePage() {
                       : 'bg-red-500 text-white border-red-500'
                     : selectedAnswer !== null && reponse.isCorrect
                       ? 'bg-green-100 border-green-500'
-                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      : 'text-primary bg-secondary border-secondary-foreground hover:bg-secondary-foreground'
                   }
                   ${selectedAnswer !== null || isAnswering ? 'cursor-not-allowed' : 'cursor-pointer hover:border-blue-300'}
                 `}
