@@ -4,13 +4,16 @@ import Button from "../../components/ui/Button";
 import type { WaitingPlayer } from "./models/waitingPlayer";
 import type { Quizz } from "../../models/quizz";
 
-interface WaitingRoomProps {
-  isQuickPlay: boolean;
-  players: WaitingPlayer[];
-  quizz?: Quizz;
-}
+//TODO: récupéré ces infos du websocket
+const players: WaitingPlayer[] = [];
+const quizz: Quizz = {
+  id: 1,
+  label: 'title',
+  description: 'aaaaaaaaaaaa',
+};
+const isQuickPlay = true;
 
-function WaitingRoom({ isQuickPlay, players, quizz }: WaitingRoomProps) {
+function WaitingRoom() {
   const [isReady, setIsReady] = useState(false);
 
   const getReady = () => {
@@ -66,7 +69,8 @@ function WaitingRoom({ isQuickPlay, players, quizz }: WaitingRoomProps) {
             <h2 className="mb-2 text-2xl font-bold text-primary">{quizz.label}</h2>
             <p className="mb-6 text-primary">{quizz.description}</p>
             <div className="flex justify-center gap-4">
-              {quizz.themes.map((theme, idx) => (
+
+              {quizz?.themes && quizz.themes.map((theme, idx) => (
                 <span
                   key={idx}
                   className="px-4 py-1 text-sm font-semibold rounded-full bg-sky-400"

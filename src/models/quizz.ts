@@ -6,8 +6,8 @@ export interface Quizz {
     label: string;
     description: string;
     niveauDifficulte?: number;
-    questions: Question[];
-    themes: Theme[];
-    created_at: string;
+    questions?: Question[];
+    themes?: Theme[];
+    created_at?: string;
     updated_at?: string;
 }
