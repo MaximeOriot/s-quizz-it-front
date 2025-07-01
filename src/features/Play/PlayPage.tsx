@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import { getAuthenticatedUserThunk } from '../auth/authThunks';
 import { prepareSoloGameQuestionThunk } from '../Game/gameThunks';
+import Button from '../../components/ui/Button';
 
 function PlayPage() {
   const navigate = useNavigate();
@@ -117,8 +118,10 @@ function PlayPage() {
     <div className="flex flex-col gap-6 justify-center items-center">
         <Header playerName= {localStorage.getItem('username')} />
         <div className="text-center lg:my-6 title">
-            Que veux-tu faire ?
+            Que veux-tu faire ? 
         </div>
+
+        <Button onClick={() => navigate('/globalRoom')}>Trouver une salle</Button>
         
         <Bento items={bentoItems} />
     </div>
