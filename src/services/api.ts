@@ -1,5 +1,5 @@
 export class Api {
-    private static readonly baseUrl: string = 'https://backend-squizzit.dreadex.dev/api';
+    private static readonly baseUrl: string = 'http://localhost:3000/api';
     private static token: string | null = null;
 
     private static getHeaders(
@@ -34,18 +34,6 @@ export class Api {
     }
 
     const response = await fetch(fullUrl, options);
-
-    // Bypass refresh logic for login/register
-    const isAuthRoute =
-      url.includes("/auth/login") || url.includes("/auth/register");
-
-    if (response.status === 401 && !isAuthRoute) {
-      /*const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        options.headers = this.getHeaders(extraHeaders); // refresh headers
-        response = await fetch(fullUrl, options);
-      }*/
-    }
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
