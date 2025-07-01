@@ -201,7 +201,7 @@ function WaitingRoom() {
           {!roomData.isQuickPlay && (
             <div className="mt-4">
               <Button
-                variant={isReady ? "primary" : "disabled"}
+                variant="primary"
                 textSize="lg"
                 width="6xl"
                 onClick={getReady}
