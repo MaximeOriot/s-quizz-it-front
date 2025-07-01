@@ -63,6 +63,10 @@
   .font-syne {
     font-family: 'SyneBold', sans-serif;
   }
+
+  .settings {
+  
+  }
 }
 
 @layer base {

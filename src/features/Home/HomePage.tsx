@@ -29,17 +29,9 @@ function HomePage() {
   };
 
   return (
-    <div className="home-page flex flex-col items-center justify-center px-4">
+    <div className="flex flex-col items-center justify-center px-4 home-page">
 
-       <div className="flex flex-row-reverse gap-4 w-full">
-        <Button
-          onClick={() => onAuthClick(false)}
-          variant='primary'
-          textSize='md'
-          width='6xl'
-        >
-          Connexion
-        </Button>
+       <div className="flex flex-row-reverse w-full gap-4">
         <Button
           onClick={() => onAuthClick(true)}
           variant='primary'
@@ -47,6 +39,14 @@ function HomePage() {
           width='6xl'
         >
           Inscription
+        </Button>
+        <Button
+          onClick={() => onAuthClick(false)}
+          variant='primary'
+          textSize='md'
+          width='6xl'
+        >
+          Connexion
         </Button>
       </div>
 
@@ -61,7 +61,7 @@ function HomePage() {
             Le quiz qui met l'ambiance, et la <span className="text-primary">pression !</span>
           </div>
 
-          <div className="hidden lg:flex w-full flex justify-end">
+          <div className="flex justify-end hidden w-full lg:flex">
             <Button
               variant="primary"
               textSize="lg"
@@ -73,7 +73,7 @@ function HomePage() {
           </div>
       </div>
 
-        <div className="subtitle w-full">
+        <div className="w-full subtitle">
             Chaque seconde compte. Chaque erreur se paie.
         </div>
 
