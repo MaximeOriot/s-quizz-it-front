@@ -18,7 +18,7 @@ interface RootState {
 const Header: React.FC<HeaderProps> = ({ playerName }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   console.log(user);
 
   // Extraire le nom d'utilisateur de l'objet user
@@ -41,6 +41,9 @@ const Header: React.FC<HeaderProps> = ({ playerName }) => {
   // Utiliser le prop playerName s'il est fourni, sinon utiliser localStorage, puis Redux
   const displayName = playerName ?? localStorage.getItem('username') ?? getUserName(user) ?? 'Invité';
 
+  // Vérifier si l'utilisateur est connecté
+  const isUserConnected = isAuthenticated || (user !== null && user !== undefined);
+
   const handleLogout = () => {
     // Dispatch logout action
     dispatch(logout());
@@ -51,15 +54,27 @@ const Header: React.FC<HeaderProps> = ({ playerName }) => {
   return (
     <nav className="flex justify-between items-center py-3 w-full border-b lg:px-6 border-b-secondary">
       <div className="flex gap-3 items-center">
-        <img src={logo} alt="Logo S-quizz-it" className="w-20 h-auto" />
+        <button 
+          onClick={() => navigate('/')}
+          className="p-0 bg-transparent border-none cursor-pointer"
+          aria-label="Retour à l'accueil"
+        >
+          <img 
+            src={logo} 
+            alt="Logo S-quizz-it" 
+            className="w-20 h-auto" 
+          />
+        </button>
       </div>
       <div className='flex gap-4 items-center'>
-        <button
-                onClick={() => handleLogout()}
-                className="px-4 py-2 font-semibold border-b-2 border-secondary text-secondary"
-              >
-                Se déconnecter
-              </button>
+        {isUserConnected && (
+          <button
+            onClick={() => handleLogout()}
+            className="px-4 py-2 font-semibold border-b-2 border-secondary text-secondary"
+          >
+            Se déconnecter
+          </button>
+        )}
         <div className="text-lg font-semibold">
           Bienvenue, {displayName}!
         </div>
