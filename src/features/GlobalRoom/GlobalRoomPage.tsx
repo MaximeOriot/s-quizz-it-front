@@ -1,20 +1,11 @@
 import Header from "../../components/ui/Header";
 import Button from "../../components/ui/Button";
+import LoadingAnimation from "../../components/ui/LoadingAnimation";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from 'react-redux';
-import { useEffect, useState } from "react";
-import { createWebSocket } from "../../util/WebSocket";
-
-interface Room {
-  id: number;
-  label: string;
-  type: "normal" | "rapide";
-  difficulte: number;
-  j_actuelle: number;
-  j_max: number;
-  commence: boolean;
-  created_at: string;
-}
+import { useState, useEffect } from 'react';
+import { useRoomsData, useGlobalRoomWebSocket } from "./hooks";
+import { RoomCard } from "./components/RoomCard";
 
 interface RootState {
   auth: {
@@ -26,64 +17,36 @@ interface RootState {
 function GlobalRoom() {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const { rooms, updateRooms } = useRoomsData();
+  const [isLoading, setIsLoading] = useState(true);
 
-  const getStatusColor = (commence: boolean) => {
-    return commence ? "text-blue-400" : "text-green-500";
-  };
-
-  const getStatusText = (commence: boolean) => {
-    return commence ? "En cours" : "En attente";
-  };
-
-  const getDifficultyText = (difficulte: number) => {
-    switch (difficulte) {
-      case 1: return "Facile";
-      case 2: return "Moyen";
-      case 3: return "Difficile";
-      default: return "Inconnu";
+  useGlobalRoomWebSocket({
+    onRoomsUpdate: (newRooms) => {
+      updateRooms(newRooms);
+      setIsLoading(false);
     }
-  };
+  });
 
-  const getDifficultyColor = (difficulte: number) => {
-    switch (difficulte) {
-      case 1: return "bg-green-500";
-      case 2: return "bg-yellow-500";
-      case 3: return "bg-red-500";
-      default: return "bg-gray-500";
-    }
-  };
-
-  const getButtonText = (room: Room) => {
-    if (room.commence) return "En cours";
-    if (room.j_actuelle >= room.j_max) return "Pleine";
-    return "Rejoindre";
-  };
-
+  // Timeout pour éviter un chargement infini
   useEffect(() => {
-    let socket: WebSocket;
-    
-    try {
-      socket = createWebSocket({
-        onMessage: (data) => {
-          if (data && typeof data === 'object' && 'type' in data && data.type === "salons_init" && 'salons' in data) {
-            setRooms(data.salons as Room[]);
-          }
-        },
-        onError: (error) => {
-          console.error("Erreur WebSocket:", error);
-        }
-      });
-    } catch (error) {
-      console.error("Erreur lors de la création du WebSocket:", error);
-    }
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 10000);
 
-    return () => {
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.close();
-      }
-    };
+    return () => clearTimeout(timeout);
   }, []);
+
+  const handleCreateRoom = () => {
+    navigate("/createRoom");
+  };
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
+  const handleCreateFirstRoom = () => {
+    navigate("/createRoom");
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -100,69 +63,40 @@ function GlobalRoom() {
         </div>
 
         <div className="flex gap-4 mb-6">
-          <Button variant="primary" onClick={() => navigate("/createRoom")}>
+          <Button variant="primary" onClick={handleCreateRoom}>
             Créer une salle
           </Button>
-          <Button variant="secondary" onClick={() => window.location.reload()}>
+          <Button variant="secondary" onClick={handleRefresh}>
             Actualiser
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 w-full max-w-6xl md:grid-cols-2 lg:grid-cols-3">
-          {rooms.map((room) => (
-            <div key={room.id} className="p-4 rounded-xl backdrop-blur-sm border-secondary-foreground bg-secondary-foreground">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <h3 className="mb-1 text-lg font-bold text-primary">
-                    {room.label}
-                    <span className={`px-2 py-1 ml-2 text-xs text-white rounded-full ${getDifficultyColor(room.difficulte)}`}>
-                      {getDifficultyText(room.difficulte)}
-                    </span>
-                  </h3>
-                  <p className="text-sm capitalize text-primary">Type: {room.type}</p>
-                </div>
-                <span className={`text-sm font-semibold ${getStatusColor(room.commence)}`}>
-                  {getStatusText(room.commence)}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-sm text-primary">
-                  <span className="font-semibold">{room.j_actuelle}</span>
-                  <span className="mx-1">/</span>
-                  <span>{room.j_max} joueurs</span>
-                </div>
-                <span className="px-2 py-1 text-xs capitalize rounded-full bg-primary/20 text-primary">
-                  {room.type}
-                </span>
-              </div>
-
-              <div className="mb-4 w-full h-2 bg-gray-200 rounded-full">
-                <div
-                  className="h-2 bg-blue-500 rounded-full"
-                  style={{ width: `${(room.j_actuelle / room.j_max) * 100}%` }}
-                />
-              </div>
-
-              <Button
-                variant="primary"
-                onClick={() => navigate(`/waitingRoom?roomId=${room.id}`)}
-                disabled={room.commence || room.j_actuelle >= room.j_max}
-                className="w-full"
-              >
-                {getButtonText(room)}
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        {rooms.length === 0 && (
-          <div className="mt-8 text-center text-foreground/60">
-            <p className="mb-4 text-lg">Aucune salle ouverte pour le moment</p>
-            <Button variant="primary" onClick={() => navigate("/createRoom")}>
-              Créer la première salle
-            </Button>
+        {isLoading ? (
+          <div className="flex flex-1 justify-center items-center min-h-[400px]">
+            <LoadingAnimation
+              message="Chargement des salles"
+              subMessage="Récupération des salles disponibles"
+              variant="dots"
+              size="lg"
+            />
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-4 w-full max-w-6xl md:grid-cols-2 lg:grid-cols-3">
+              {rooms.map((room) => (
+                <RoomCard key={room.id} room={room} />
+              ))}
+            </div>
+
+            {rooms.length === 0 && (
+              <div className="mt-8 text-center text-foreground/60">
+                <p className="mb-4 text-lg">Aucune salle ouverte pour le moment</p>
+                <Button variant="primary" onClick={handleCreateFirstRoom}>
+                  Créer la première salle
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

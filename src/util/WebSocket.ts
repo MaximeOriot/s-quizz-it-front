@@ -1,16 +1,9 @@
-/**
- * Interface définissant les callbacks disponibles pour la gestion des événements WebSocket
- */
-interface WebSocketCallbacks {
-  /** Callback appelé quand un message est reçu du serveur */
-  onMessage?: (data: unknown) => void;
-  /** Callback appelé en cas d'erreur de connexion */
-  onError?: (error: Event) => void;
-  /** Callback appelé quand la connexion WebSocket est établie */
-  onOpen?: () => void;
-  /** Callback appelé quand la connexion WebSocket est fermée */
-  onClose?: (event: CloseEvent) => void;
-}
+import type { WebSocketCallbacks } from './WebSocket/types';
+import { WebSocketMessageHandler as MessageHandler } from './WebSocket/messageHandler';
+import { joinRoom, sendPlayerReady } from './WebSocket/actions';
+
+export { joinRoom, sendPlayerReady };
+export type { WebSocketCallbacks } from './WebSocket/types';
 
 /**
  * Crée et configure une connexion WebSocket avec authentification
@@ -33,6 +26,9 @@ export const createWebSocket = (callbacks?: WebSocketCallbacks) => {
     token   // Token JWT pour l'authentification
   ]);
 
+  // Initialisation du gestionnaire de messages
+  const messageHandler = new MessageHandler(callbacks || {});
+
   /**
    * Gestionnaire d'événement : Connexion établie
    * Appelé quand la connexion WebSocket est ouverte avec succès
@@ -53,9 +49,7 @@ export const createWebSocket = (callbacks?: WebSocketCallbacks) => {
       // Traitement des messages texte (JSON)
       if (typeof event.data === 'string') {
         const data = JSON.parse(event.data);
-        if (callbacks?.onMessage) {
-          callbacks.onMessage(data);
-        }
+        messageHandler.handleMessage(data);
       } 
       // Traitement des messages Blob (données binaires)
       else if (event.data instanceof Blob) {
@@ -64,9 +58,7 @@ export const createWebSocket = (callbacks?: WebSocketCallbacks) => {
           try {
             const text = reader.result as string;
             const data = JSON.parse(text);
-            if (callbacks?.onMessage) {
-              callbacks.onMessage(data);
-            }
+            messageHandler.handleMessage(data);
           } catch (error) {
             console.error("Erreur parsing Blob data:", error);
           }
@@ -105,18 +97,4 @@ export const createWebSocket = (callbacks?: WebSocketCallbacks) => {
   };
 
   return socket;
-};
-
-/**
- * Fonction utilitaire pour envoyer des messages via WebSocket
- * @param socket - Instance WebSocket à utiliser
- * @param message - Message à envoyer (sera converti en JSON)
- */
-export const sendWebSocketMessage = (socket: WebSocket, message: unknown) => {
-  // Vérification que la connexion est ouverte avant d'envoyer
-  if (socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify(message));
-  } else {
-    console.error("WebSocket n'est pas ouvert");
-  }
 };
