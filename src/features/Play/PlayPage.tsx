@@ -3,6 +3,9 @@ import Bento from '../../components/ui/Bento';
 import Header from '../../components/ui/Header';
 import { useDispatch, useSelector } from 'react-redux';
 import { prepareSoloGameQuestionThunk } from '../Game/gameThunks';
+import { useEffect } from 'react';
+import { getAuthenticatedUserThunk } from '../auth/authThunks';
+import { fetchQuestionsThunk, prepareSoloGameQuestionThunk } from '../Game/gameThunks';
 import Button from '../../components/ui/Button';
 
 interface RootState {
@@ -18,20 +21,20 @@ function PlayPage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
 
-  // useEffect(() => {
-  //   const token = localStorage.getItem('token');
+  useEffect(() => {
+    const token = localStorage.getItem('token');
     
-  //   // Si on n'a pas de données utilisateur en state mais qu'on a un token
-  //   if (!user && !isAuthenticated && token) {
-  //     dispatch(getAuthenticatedUserThunk());
-  //   }
+    // Si on n'a pas de données utilisateur en state mais qu'on a un token
+    if (!user && !isAuthenticated && token) {
+      dispatch(getAuthenticatedUserThunk());
+    }
     
-  //   // Si on n'a pas de token, l'utilisateur est en mode invité
-  //   if (!token) {
-  //     console.log('Utilisateur en mode invité');
-  //     // Optionnel: vous pouvez définir un état pour gérer le mode invité
-  //   }
-  // }, [dispatch, user, isAuthenticated]);
+    // Si on n'a pas de token, l'utilisateur est en mode invité
+    if (!token) {
+      console.log('Utilisateur en mode invité');
+      // Optionnel: vous pouvez définir un état pour gérer le mode invité
+    }
+  }, [dispatch, user, isAuthenticated]);
 
   const handleSoloGame = async () => {
     // Récupérer le nom d'utilisateur depuis différentes sources
