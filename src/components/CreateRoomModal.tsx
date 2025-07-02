@@ -39,10 +39,35 @@ function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) 
       console.log('🚀 Redirection vers la salle:', roomId);
       onClose();
       navigate(`/waitingRoom?roomId=${roomId}`);
-    }, 2000); // Délai plus long pour laisser le temps au serveur
+    }, 1000); // Délai réduit
   };
 
   const { createRoom, rooms, refreshRooms } = useWebSocketStore({ onRoomCreated: handleRoomCreated });
+
+  // Effet pour détecter quand une nouvelle salle apparaît dans la liste
+  useEffect(() => {
+    if (isLoading && rooms.length > 0) {
+      // Chercher une salle qui correspond à nos critères de création
+      const matchingRoom = rooms.find(room => 
+        room.label === formData.label && 
+        room.difficulte === formData.difficulte && 
+        room.j_max === formData.j_max
+      );
+      
+      if (matchingRoom && !createdRoomId) {
+        console.log('🎯 Nouvelle salle détectée dans la liste:', matchingRoom.id);
+        setCreatedRoomId(matchingRoom.id);
+        setIsLoading(false);
+        
+        // Fermer le modal et rediriger vers la salle
+        setTimeout(() => {
+          console.log('🚀 Redirection vers la nouvelle salle:', matchingRoom.id);
+          onClose();
+          navigate(`/waitingRoom?roomId=${matchingRoom.id}`);
+        }, 1000);
+      }
+    }
+  }, [isLoading, rooms, formData, createdRoomId, navigate, onClose]);
 
   // Réinitialiser le formulaire quand le modal se ferme
   useEffect(() => {
@@ -66,7 +91,7 @@ function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) 
         room.label === formData.label && 
         room.difficulte === formData.difficulte && 
         room.j_max === formData.j_max &&
-        room.j_actuelle === 0 // Nouvelle salle sans joueurs encore
+        room.j_actuelle === 1 // Nouvelle salle avec le créateur
       );
       
       if (createdRoom && !createdRoomId) {
@@ -79,7 +104,7 @@ function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) 
           console.log('🚀 Redirection vers la salle (fallback):', createdRoom.id);
           onClose();
           navigate(`/waitingRoom?roomId=${createdRoom.id}`);
-        }, 2000);
+        }, 500);
       }
     }
   }, [isLoading, rooms, formData, createdRoomId, navigate, onClose]);

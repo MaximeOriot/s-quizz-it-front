@@ -1,4 +1,4 @@
-import React, { createContext, useRef, useCallback, useEffect } from 'react';
+import React, { createContext, useRef, useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { globalWebSocket } from '../util/GlobalWebSocket';
 import type { WebSocketCallbacks } from '../util/WebSocket/types';
@@ -8,6 +8,7 @@ interface WebSocketContextType {
   addListener: (id: string, callbacks: WebSocketCallbacks) => void;
   removeListener: (id: string) => void;
   sendMessage: (message: unknown) => void;
+  forceUpdate: () => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -18,6 +19,7 @@ interface WebSocketProviderProps {
 
 function WebSocketProvider({ children }: WebSocketProviderProps) {
   const listenersRef = useRef<Map<string, WebSocketCallbacks>>(new Map());
+  const [, forceUpdate] = useState({});
 
   const addListener = useCallback((id: string, callbacks: WebSocketCallbacks) => {
     listenersRef.current.set(id, callbacks);
@@ -31,6 +33,10 @@ function WebSocketProvider({ children }: WebSocketProviderProps) {
 
   const sendMessage = useCallback((message: unknown) => {
     globalWebSocket.sendMessage(message);
+  }, []);
+
+  const forceUpdateContext = useCallback(() => {
+    forceUpdate({});
   }, []);
 
   // La connexion est déjà initialisée au niveau de l'application
@@ -51,7 +57,8 @@ function WebSocketProvider({ children }: WebSocketProviderProps) {
     socket: globalWebSocket.getSocket(),
     addListener,
     removeListener,
-    sendMessage
+    sendMessage,
+    forceUpdate: forceUpdateContext
   };
 
   return (
