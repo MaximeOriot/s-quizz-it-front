@@ -285,7 +285,29 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
             
             console.log('Joueurs convertis (format direct):', playersArray);
             
-            if (!currentRoom) {
+            // Fusionner avec les données existantes pour préserver le contexte
+            if (currentRoom) {
+              console.log('Fusion des joueurs avec les données existantes');
+              const existingPlayers = currentRoom.players || [];
+              const mergedPlayers = playersArray.map(newPlayer => {
+                const existingPlayer = existingPlayers.find(p => p.id === newPlayer.id);
+                
+                // S'assurer que l'avatar est bien une URL
+                let avatarUrl = newPlayer.avatar;
+                if (typeof avatarUrl === 'object' && avatarUrl && 'urlavatar' in (avatarUrl as { urlavatar: string })) {
+                  avatarUrl = (avatarUrl as { urlavatar: string }).urlavatar;
+                }
+                
+                return {
+                  ...existingPlayer, // Préserver les données existantes
+                  ...newPlayer, // Mettre à jour avec les nouvelles données
+                  avatar: avatarUrl, // Forcer l'avatar en URL
+                  isReady: newPlayer.isReady !== undefined ? newPlayer.isReady : (existingPlayer?.isReady || false)
+                };
+              });
+              
+              dispatch(updateRoomPlayers(mergedPlayers));
+            } else {
               console.log('Initialisation de currentRoom avec les joueurs (format direct)');
               dispatch(setCurrentRoom({
                 players: playersArray,
@@ -293,8 +315,6 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
                 isQuickPlay: false,
                 roomId: roomId || ''
               }));
-            } else {
-              dispatch(updateRoomPlayers(playersArray));
             }
           }
           break;
@@ -307,6 +327,26 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
               isReady: messageData.isReady as boolean
             }));
           }
+          break;
+          
+        case 'ready_status_update':
+          console.log('Mise à jour du statut prêt reçue:', messageData);
+          if ('playerId' in messageData && 'isReady' in messageData) {
+            console.log('Mise à jour du statut prêt pour le joueur:', messageData.playerId, messageData.isReady);
+            dispatch(updatePlayerReady({
+              playerId: messageData.playerId as string,
+              isReady: messageData.isReady as boolean
+            }));
+          }
+          break;
+          
+        case 'all_players_ready':
+          console.log('Tous les joueurs sont prêts !');
+          break;
+          
+        case 'est prêt':
+        case 'est pas prêt':
+          console.log('Message de statut prêt reçu:', messageData.type);
           break;
           
         case 'success':
@@ -368,7 +408,21 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
             
             console.log('Joueurs convertis lors de la connexion (type direct):', playersArray);
             
-            if (!currentRoom) {
+            // Fusionner avec les données existantes pour préserver le contexte
+            if (currentRoom) {
+              console.log('Fusion des joueurs lors de la connexion avec les données existantes');
+              const existingPlayers = currentRoom.players || [];
+              const mergedPlayers = playersArray.map(newPlayer => {
+                const existingPlayer = existingPlayers.find(p => p.id === newPlayer.id);
+                return {
+                  ...existingPlayer, // Préserver les données existantes
+                  ...newPlayer, // Mettre à jour avec les nouvelles données
+                  isReady: newPlayer.isReady !== undefined ? newPlayer.isReady : (existingPlayer?.isReady || false)
+                };
+              });
+              
+              dispatch(updateRoomPlayers(mergedPlayers));
+            } else {
               console.log('Initialisation de currentRoom avec les joueurs lors de la connexion (type direct)');
               dispatch(setCurrentRoom({
                 players: playersArray,
@@ -376,9 +430,6 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
                 isQuickPlay: false,
                 roomId: roomId || ''
               }));
-            } else {
-              console.log('Mise à jour des joueurs dans currentRoom (type direct)');
-              dispatch(updateRoomPlayers(playersArray));
             }
           }
           
@@ -413,7 +464,49 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
         
         if ('players' in dataObj && Array.isArray(dataObj.players)) {
           console.log('Données de joueurs détectées:', dataObj.players);
-          dispatch(updateRoomPlayers(dataObj.players as WaitingPlayer[]));
+          
+          // Traiter les joueurs pour convertir les avatars
+          const processedPlayers = (dataObj.players as Array<{
+            id: string;
+            pseudo: string;
+            avatar: string | { idAvatar: number; urlavatar: string };
+            isReady?: boolean;
+          }>).map(player => {
+            let avatarUrl = '/default-avatar.png';
+            if (player.avatar) {
+              if (typeof player.avatar === 'string') {
+                avatarUrl = player.avatar;
+              } else if (typeof player.avatar === 'object' && 'urlavatar' in player.avatar) {
+                avatarUrl = player.avatar.urlavatar;
+              }
+            }
+            
+            return {
+              id: player.id,
+              pseudo: player.pseudo,
+              avatar: avatarUrl,
+              isReady: player.isReady || false
+            };
+          });
+          
+          // Fusionner avec les données existantes pour préserver le contexte
+          if (currentRoom) {
+            console.log('Fusion des joueurs (format non structuré) avec les données existantes');
+            const existingPlayers = currentRoom.players || [];
+            
+            const mergedPlayers = processedPlayers.map(newPlayer => {
+              const existingPlayer = existingPlayers.find(p => p.id === newPlayer.id);
+              return {
+                ...existingPlayer, // Préserver les données existantes
+                ...newPlayer, // Mettre à jour avec les nouvelles données
+                isReady: newPlayer.isReady !== undefined ? newPlayer.isReady : (existingPlayer?.isReady || false)
+              };
+            });
+            
+            dispatch(updateRoomPlayers(mergedPlayers));
+          } else {
+            dispatch(updateRoomPlayers(processedPlayers));
+          }
         }
       }
     }
@@ -471,6 +564,15 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
     }
   }, [roomId, isConnected, sendWebSocketMessage, dispatch, currentRoom]);
 
+  // Effet pour demander les salles globales quand connecté et pas dans une salle
+  useEffect(() => {
+    if (isConnected && !roomId && !hasReceivedData) {
+      console.log('Demande des salles globales...');
+      dispatch(setRoomsLoading(true));
+      sendWebSocketMessage('fetch');
+    }
+  }, [isConnected, roomId, hasReceivedData, sendWebSocketMessage, dispatch]);
+
   // Effet pour demander les données de la salle après avoir rejoint
   useEffect(() => {
     if (roomId && isConnected && !roomLoading && !currentRoom) {
@@ -516,6 +618,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
 
      const setPlayerReady = useCallback(() => {
      if (roomId) {
+       console.log('Envoi de la commande ready:', `ready-${roomId}`);
        sendWebSocketMessage(`ready-${roomId}`);
      }
    }, [roomId, sendWebSocketMessage]);
