@@ -1,0 +1,242 @@
+[
+    {
+        "id": 1,
+        "label": "Quelle est la capitale de la France ?",
+        "niveauDifficulte": 1,
+        "type": "géographie",
+        "reponses": [
+            { "id": 1, "label": "Paris" },
+            { "id": 2, "label": "Londres" },
+            { "id": 3, "label": "Berlin" },
+            { "id": 4, "label": "Madrid" }
+        ]
+    },
+    {
+        "id": 2,
+        "label": "Qui a peint la Joconde ?",
+        "niveauDifficulte": 2,
+        "type": "art",
+        "reponses": [
+            { "id": 1, "label": "Leonard de Vinci" },
+            { "id": 2, "label": "Pablo Picasso" },
+            { "id": 3, "label": "Claude Monet" },
+            { "id": 4, "label": "Vincent van Gogh" }
+        ]
+    },
+    {
+        "id": 3,
+        "label": "Quel est le plus grand océan du monde ?",
+        "niveauDifficulte": 1,
+        "type": "géographie",
+        "reponses": [
+            { "id": 1, "label": "Océan Pacifique" },
+            { "id": 2, "label": "Océan Atlantique" },
+            { "id": 3, "label": "Océan Indien" },
+            { "id": 4, "label": "Océan Arctique" }
+        ]
+    },
+    {
+        "id": 4,
+        "label": "En quelle année a eu lieu la Révolution française ?",
+        "niveauDifficulte": 2,
+        "type": "histoire",
+        "reponses": [
+            { "id": 1, "label": "1789" },
+            { "id": 2, "label": "1776" },
+            { "id": 3, "label": "1804" },
+            { "id": 4, "label": "1815" }
+        ]
+    },
+    {
+        "id": 5,
+        "label": "Quel est l'élément chimique dont le symbole est 'O' ?",
+        "niveauDifficulte": 1,
+        "type": "science",
+        "reponses": [
+            { "id": 1, "label": "Oxygène" },
+            { "id": 2, "label": "Or" },
+            { "id": 3, "label": "Osmium" },
+            { "id": 4, "label": "Hydrogène" }
+        ]
+    },
+    {
+        "id": 6,
+        "label": "Quel est le pays le plus peuplé du monde ?",
+        "niveauDifficulte": 1,
+        "type": "géographie",
+        "reponses": [
+            { "id": 1, "label": "Chine" },
+            { "id": 2, "label": "Inde" },
+            { "id": 3, "label": "États-Unis" },
+            { "id": 4, "label": "Indonésie" }
+        ]
+    },
+    {
+        "id": 7,
+        "label": "Qui est l'auteur de 'Les Misérables' ?",
+        "niveauDifficulte": 2,
+        "type": "littérature",
+        "reponses": [
+            { "id": 1, "label": "Victor Hugo" },
+            { "id": 2, "label": "Émile Zola" },
+            { "id": 3, "label": "Honoré de Balzac" },
+            { "id": 4, "label": "Gustave Flaubert" }
+        ]
+    },
+    {
+        "id": 8,
+        "label": "Quel est le plus petit pays du monde ?",
+        "niveauDifficulte": 1,
+        "type": "géographie",
+        "reponses": [
+            { "id": 1, "label": "Vatican" },
+            { "id": 2, "label": "Monaco" },
+            { "id": 3, "label": "San Marin" },
+            { "id": 4, "label": "Liechtenstein" }
+        ]
+    },
+    {
+        "id": 9,
+        "label": "Quel est le symbole chimique de l'eau ?",
+        "niveauDifficulte": 1,
+        "type": "science",
+        "reponses": [
+            { "id": 1, "label": "H2O" },
+            { "id": 2, "label": "HO" },
+            { "id": 3, "label": "O2" },
+            { "id": 4, "label": "H2" }
+        ]
+    },
+    {
+        "id": 10,
+        "label": "Quel est le plus haut sommet du monde ?",
+        "niveauDifficulte": 1,
+        "type": "géographie",
+        "reponses": [
+            { "id": 1, "label": "Mont Everest" },
+            { "id": 2, "label": "Mont Blanc" },
+            { "id": 3, "label": "K2" },
+            { "id": 4, "label": "Kangchenjunga" }
+        ]
+    },
+    {
+        "id": 11,
+        "label": "Qui a écrit 'Roméo et Juliette' ?",
+        "niveauDifficulte": 2,
+        "type": "littérature",
+        "reponses": [
+            { "id": 1, "label": "William Shakespeare" },
+            { "id": 2, "label": "Charles Dickens" },
+            { "id": 3, "label": "Jane Austen" },
+            { "id": 4, "label": "George Orwell" }
+        ]
+    },
+    {
+        "id": 12,
+        "label": "Quel est le plus grand désert du monde ?",
+        "niveauDifficulte": 1,
+        "type": "géographie",
+        "reponses": [
+            { "id": 1, "label": "Sahara" },
+            { "id": 2, "label": "Antarctique" },
+            { "id": 3, "label": "Gobi" },
+            { "id": 4, "label": "Kalahari" }
+        ]
+    },
+    {
+        "id": 13,
+        "label": "Quel est le nom du président des États-Unis en 2021 ?",
+        "niveauDifficulte": 1,
+        "type": "politique",
+        "reponses": [
+            { "id": 1, "label": "Joe Biden" },
+            { "id": 2, "label": "Donald Trump" },
+            { "id": 3, "label": "Barack Obama" },
+            { "id": 4, "label": "George W. Bush" }
+        ]
+    },
+    {
+        "id": 14,
+        "label": "Quel est le plus grand mammifère terrestre ?",
+        "niveauDifficulte": 1,
+        "type": "science",
+        "reponses": [
+            { "id": 1, "label": "Éléphant" },
+            { "id": 2, "label": "Girafe" },
+            { "id": 3, "label": "Rhinocéros" },
+            { "id": 4, "label": "Hippopotame" }
+        ]
+    },
+    {
+        "id": 15,
+        "label": "Quel est le nom du satellite naturel de la Terre ?",
+        "niveauDifficulte": 1,
+        "type": "science",
+        "reponses": [
+            { "id": 1, "label": "Lune" },
+            { "id": 2, "label": "Mars" },
+            { "id": 3, "label": "Soleil" },
+            { "id": 4, "label": "Vénus" }
+        ]
+    },
+    {
+        "id": 16,
+        "label": "Quel est le nom de l'inventeur de l'électricité ?",
+        "niveauDifficulte": 2,
+        "type": "science",
+        "reponses": [
+            { "id": 1, "label": "Thomas Edison" },
+            { "id": 2, "label": "Nikola Tesla" },
+            { "id": 3, "label": "Benjamin Franklin" },
+            { "id": 4, "label": "Michael Faraday" }
+        ]
+    },
+    {
+        "id": 17,
+        "label": "Quel est le nom du plus grand fleuve du monde ?",
+        "niveauDifficulte": 1,
+        "type": "géographie",
+        "reponses": [
+            { "id": 1, "label": "Amazon" },
+            { "id": 2, "label": "Nil" },
+            { "id": 3, "label": "Yangtsé" },
+            { "id": 4, "label": "Mississippi" }
+        ]
+    },
+    {
+        "id": 18,
+        "label": "Quel est le nom du dieu grec de la mer ?",
+        "niveauDifficulte": 2,
+        "type": "mythologie",
+        "reponses": [
+            { "id": 1, "label": "Poséidon" },
+            { "id": 2, "label": "Zeus" },
+            { "id": 3, "label": "Hadès" },
+            { "id": 4, "label": "Hermès" }
+        ]
+    },
+    {
+        "id": 19,
+        "label": "Quel est le nom du peintre de 'La Nuit étoilée' ?",
+        "niveauDifficulte": 2,
+        "type": "art",
+        "reponses": [
+            { "id": 1, "label": "Vincent van Gogh" },
+            { "id": 2, "label": "Claude Monet" },
+            { "id": 3, "label": "Pablo Picasso" },
+            { "id": 4, "label": "Leonard de Vinci" }
+        ]
+    },
+    {
+        "id": 20,
+        "label": "Quel est le nom du premier homme à marcher sur la lune ?",
+        "niveauDifficulte": 2,
+        "type": "science",
+        "reponses": [
+            { "id": 1, "label": "Neil Armstrong" },
+            { "id": 2, "label": "Buzz Aldrin" },
+            { "id": 3, "label": "Yuri Gagarin" },
+            { "id": 4, "label": "Michael Collins" }
+        ]
+    }
+]
