@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from './ui/Button';
 import { useWebSocketStore } from '../hooks/useWebSocketStore';
 
@@ -23,8 +24,25 @@ function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) 
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createdRoomId, setCreatedRoomId] = useState<number | null>(null);
 
-  const { createRoom } = useWebSocketStore();
+  const navigate = useNavigate();
+
+  // Callback pour quand une salle est créée
+  const handleRoomCreated = (roomId: number) => {
+    console.log('🎉 Salle créée avec succès, redirection vers:', roomId);
+    setCreatedRoomId(roomId);
+    setIsLoading(false);
+    
+    // Fermer le modal et rediriger vers la salle après un délai plus long
+    setTimeout(() => {
+      console.log('🚀 Redirection vers la salle:', roomId);
+      onClose();
+      navigate(`/waitingRoom?roomId=${roomId}`);
+    }, 2000); // Délai plus long pour laisser le temps au serveur
+  };
+
+  const { createRoom, rooms, refreshRooms } = useWebSocketStore({ onRoomCreated: handleRoomCreated });
 
   // Réinitialiser le formulaire quand le modal se ferme
   useEffect(() => {
@@ -36,8 +54,35 @@ function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) 
       });
       setError(null);
       setIsLoading(false);
+      setCreatedRoomId(null);
     }
   }, [isOpen, forceClose]);
+
+  // Effet pour détecter quand une salle a été créée et rediriger (fallback)
+  useEffect(() => {
+    if (isLoading && rooms.length > 0) {
+      // Chercher la salle créée dans la liste mise à jour
+      const createdRoom = rooms.find(room => 
+        room.label === formData.label && 
+        room.difficulte === formData.difficulte && 
+        room.j_max === formData.j_max &&
+        room.j_actuelle === 0 // Nouvelle salle sans joueurs encore
+      );
+      
+      if (createdRoom && !createdRoomId) {
+        console.log('🎯 Salle créée détectée dans la liste (fallback):', createdRoom.id);
+        setCreatedRoomId(createdRoom.id);
+        setIsLoading(false);
+        
+        // Fermer le modal et rediriger vers la salle
+        setTimeout(() => {
+          console.log('🚀 Redirection vers la salle (fallback):', createdRoom.id);
+          onClose();
+          navigate(`/waitingRoom?roomId=${createdRoom.id}`);
+        }, 2000);
+      }
+    }
+  }, [isLoading, rooms, formData, createdRoomId, navigate, onClose]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -51,11 +96,18 @@ function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) 
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setCreatedRoomId(null);
 
     try {
       // Créer la salle via le hook centralisé
       createRoom(formData);
       console.log('Demande de création de salle envoyée:', formData);
+      
+      // Demander la mise à jour de la liste des salles après un délai
+      setTimeout(() => {
+        console.log('🔄 Demande de rafraîchissement de la liste des salles...');
+        refreshRooms();
+      }, 2000); // Attendre 2 secondes pour laisser le temps au serveur
       
       // Timeout de sécurité (10 secondes)
       setTimeout(() => {
@@ -81,6 +133,7 @@ function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) 
       j_max: 10
     });
     setError(null);
+    setCreatedRoomId(null);
     onClose();
   };
 
@@ -160,6 +213,13 @@ function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) 
           {error && (
             <div className="p-3 text-sm text-red-600 bg-red-100 rounded-lg border border-red-300">
               {error}
+            </div>
+          )}
+
+          {/* Message de succès */}
+          {createdRoomId && (
+            <div className="p-3 text-sm text-green-600 bg-green-100 rounded-lg border border-green-300">
+              Salle créée avec succès ! Redirection en cours...
             </div>
           )}
 

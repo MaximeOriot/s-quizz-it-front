@@ -19,9 +19,10 @@ import type { RootState } from '../store/types';
 
 interface UseWebSocketStoreProps {
   roomId?: string | null;
+  onRoomCreated?: (roomId: number) => void;
 }
 
-export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
+export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStoreProps = {}) => {
   const dispatch = useDispatch();
   
   // Sélecteurs Redux
@@ -37,33 +38,56 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
 
   // Gestionnaire de messages centralisé
   const handleMessage = useCallback((data: unknown) => {
-    console.log('Message WebSocket reçu dans useWebSocketStore:', data);
-    
-    // Gérer les messages avec format user/message
+    console.log('Message WebSocket reçu:', data);
+    console.log('🔍 Type de data:', typeof data);
+    console.log('🔍 Est-ce un objet?', typeof data === 'object');
+    console.log('🔍 Clés de data:', data && typeof data === 'object' ? Object.keys(data as object) : 'N/A');
+
+    // Gérer les messages avec format user/message (format du serveur)
     if (data && typeof data === 'object' && 'user' in data && 'message' in data) {
+      console.log('✅ Message reconnu comme format user/message');
       const userMessage = data as { user: string; message: string };
       console.log('Message utilisateur reçu:', userMessage);
       
+      // Traitement simplifié pour diagnostiquer
       try {
         // Essayer de parser le message JSON
-        const parsedMessage = JSON.parse(userMessage.message);
-        console.log('Message parsé:', parsedMessage);
+        let parsedMessage: unknown = null;
+        
+        if (typeof userMessage.message === 'string') {
+          // Essayer de parser directement
+          try {
+            parsedMessage = JSON.parse(userMessage.message);
+            console.log('✅ Message parsé:', parsedMessage);
+          } catch {
+            // Si ça échoue, utiliser le message tel quel
+            parsedMessage = userMessage.message;
+            console.log('✅ Message utilisé tel quel:', parsedMessage);
+          }
+        } else {
+          parsedMessage = userMessage.message;
+        }
         
         // Traiter le message parsé
         if (parsedMessage && typeof parsedMessage === 'object' && 'type' in parsedMessage) {
           const messageData = parsedMessage as { type: string; [key: string]: unknown };
           
           switch (messageData.type) {
+            case 'salons_init':
+              if ('salons' in messageData) {
+                console.log('Données des salons reçues:', messageData.salons);
+                dispatch(setRooms(messageData.salons as Room[]));
+              }
+              break;
+              
             case 'join_room':
               console.log('Confirmation de rejoindre la salle');
-              // Marquer que nous avons rejoint la salle
               dispatch(setRoomLoading(false));
               break;
               
             case 'get_room_info':
             case 'get_room_players':
               console.log('Confirmation de demande de données:', messageData.type);
-              // Ces messages sont juste des confirmations, on attend les vraies données
               break;
               
             case 'room_info':
@@ -94,27 +118,93 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
               }
               break;
               
+            case 'salon_created':
+            case 'created':
+              if ('roomId' in messageData) {
+                console.log('Salle créée avec succès:', messageData.roomId);
+                if (onRoomCreated && typeof messageData.roomId === 'number') {
+                  onRoomCreated(messageData.roomId);
+                }
+              } else {
+                console.log('Salle créée avec succès');
+                dispatch(setRoomsLoading(true));
+                sendWebSocketMessage('get_salons');
+              }
+              break;
+              
             case 'game_start':
               console.log('Le jeu commence !');
               break;
               
-                    default:
-          console.log('Message parsé non géré:', messageData.type, messageData);
-          // Si on reçoit un message avec des données de salle, on les traite
-          if (messageData.type === 'room_info' || messageData.type === 'room_players') {
-            console.log('Traitement des données de salle reçues:', messageData);
-            // Traiter les données même si elles ne sont pas dans le format attendu
-            if (messageData.type === 'room_info' && 'quizz' in messageData) {
-              dispatch(updateRoomInfo({
-                quizz: messageData.quizz as Quizz,
-                isQuickPlay: messageData.isQuickPlay as boolean || false
-              }));
+            case 'join_room_success':
+            case 'room_joined':
+            case 'connected':
+              console.log('Salle rejoint avec succès');
               dispatch(setRoomLoading(false));
-            }
-            if (messageData.type === 'room_players' && 'players' in messageData) {
-              dispatch(updateRoomPlayers(messageData.players as WaitingPlayer[]));
-            }
+              break;
+              
+            default:
+              console.log('Message parsé non géré:', messageData.type, messageData);
           }
+        } else {
+          console.log('Message sans type, traitement direct:', parsedMessage);
+          
+          // Détecter si c'est un message de création renvoyé par le serveur
+          if (typeof parsedMessage === 'string' && parsedMessage.startsWith('create:')) {
+            console.log('🎉 Message de création confirmé par le serveur:', parsedMessage);
+            try {
+              const createData = JSON.parse(parsedMessage.substring(7));
+              console.log('Données de création:', createData);
+              
+              dispatch(setRoomsLoading(true));
+              sendWebSocketMessage('get_salons');
+              
+              if (onRoomCreated) {
+                onRoomCreated(Date.now());
+              }
+            } catch (error) {
+              console.error('Erreur lors du parsing des données de création:', error);
+            }
+            return;
+          }
+          
+          // Détecter les messages de succès de connexion (format: "Vous avez rejoint le salon...")
+          if (typeof parsedMessage === 'string' && parsedMessage.includes('rejoint le salon')) {
+            console.log('🎉 Message de connexion réussie:', parsedMessage);
+            dispatch(setRoomLoading(false));
+            
+            // Demander les données de la salle après avoir rejoint
+            setTimeout(() => {
+              if (roomId) {
+                console.log('Demande des données de la salle après connexion...');
+                sendWebSocketMessage(`get_salon_info-${roomId}`);
+                sendWebSocketMessage(`get_players-${roomId}`);
+              }
+            }, 500);
+            return;
+          }
+          
+          // Détecter les données de quiz
+          if (parsedMessage && typeof parsedMessage === 'object') {
+            const dataObj = parsedMessage as Record<string, unknown>;
+            
+            if ('quizz' in dataObj || 'quiz' in dataObj) {
+              console.log('Données de quiz détectées:', dataObj);
+              const quizz = dataObj.quizz || dataObj.quiz;
+              if (quizz && typeof quizz === 'object') {
+                dispatch(updateRoomInfo({
+                  quizz: quizz as Quizz,
+                  isQuickPlay: dataObj.isQuickPlay as boolean || false
+                }));
+                dispatch(setRoomLoading(false));
+              }
+            }
+            
+            // Détecter les données de joueurs
+            if ('players' in dataObj && Array.isArray(dataObj.players)) {
+              console.log('Données de joueurs détectées:', dataObj.players);
+              dispatch(updateRoomPlayers(dataObj.players as WaitingPlayer[]));
+            }
           }
         }
       } catch (error) {
@@ -123,7 +213,7 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
       return;
     }
     
-    // Gérer les messages avec format type direct
+    // Gérer les messages avec format type direct (fallback)
     if (data && typeof data === 'object' && 'type' in data) {
       const messageData = data as { type: string; [key: string]: unknown };
       
@@ -133,6 +223,16 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
             console.log('Données des salons reçues:', messageData.salons);
             dispatch(setRooms(messageData.salons as Room[]));
           }
+          break;
+          
+        case 'join_room':
+          console.log('Confirmation de rejoindre la salle');
+          dispatch(setRoomLoading(false));
+          break;
+          
+        case 'get_room_info':
+        case 'get_room_players':
+          console.log('Confirmation de demande de données:', messageData.type);
           break;
           
         case 'room_info':
@@ -164,9 +264,16 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
           break;
           
         case 'salon_created':
+        case 'created':
           if ('roomId' in messageData) {
             console.log('Salle créée avec succès:', messageData.roomId);
-            // La liste des salles sera mise à jour par le prochain salons_init
+            if (onRoomCreated && typeof messageData.roomId === 'number') {
+              onRoomCreated(messageData.roomId);
+            }
+          } else {
+            console.log('Salle créée avec succès');
+            dispatch(setRoomsLoading(true));
+            sendWebSocketMessage('get_salons');
           }
           break;
           
@@ -176,6 +283,7 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
           
         case 'join_room_success':
         case 'room_joined':
+        case 'connected':
           console.log('Salle rejoint avec succès');
           dispatch(setRoomLoading(false));
           break;
@@ -210,7 +318,7 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
         }
       }
     }
-  }, [dispatch]);
+  }, [dispatch, onRoomCreated]);
 
   // Gestionnaire d'erreur
   const handleError = useCallback((error: Event) => {
@@ -250,7 +358,8 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
       
       // Petit délai pour s'assurer que la connexion est stable
       const timeout = setTimeout(() => {
-        sendWebSocketMessage({ type: 'join_room', roomId });
+        // Utiliser le format attendu par le backend: connect-{salonId}
+        sendWebSocketMessage(`connect-${roomId}`);
       }, 500);
 
       return () => clearTimeout(timeout);
@@ -267,8 +376,9 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
       
       const requestRoomData = () => {
         console.log(`Tentative ${retryCount + 1}/${maxRetries} de récupération des données de la salle...`);
-        sendWebSocketMessage({ type: 'get_room_info', roomId });
-        sendWebSocketMessage({ type: 'get_room_players', roomId });
+        // Demander les informations de la salle avec le bon format
+        sendWebSocketMessage(`get_salon_info-${roomId}`);
+        sendWebSocketMessage(`get_players-${roomId}`);
         
         retryCount++;
         
@@ -294,19 +404,28 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
 
   // Actions
   const createRoom = useCallback((roomData: { label: string; difficulte: number; j_max: number }) => {
+    // Utiliser le format attendu par le backend: create:{"label":"Mon Salon","difficulte":2,"j_max":4}
+    // Éviter le double JSON.stringify qui cause l'échappement
     const message = `create:${JSON.stringify(roomData)}`;
+    console.log('📤 Envoi du message de création:', message);
     sendWebSocketMessage(message);
+  }, [sendWebSocketMessage]);
+
+  const createQuickRoom = useCallback(() => {
+    // Utiliser le format attendu par le backend pour un salon rapide
+    sendWebSocketMessage('rapide');
   }, [sendWebSocketMessage]);
 
   const setPlayerReady = useCallback((isReady: boolean) => {
     if (roomId) {
-      sendWebSocketMessage({ type: 'player_ready', roomId, isReady });
+      // Utiliser le format attendu par le backend pour le statut prêt
+      sendWebSocketMessage(`player_ready-${roomId}-${isReady}`);
     }
   }, [roomId, sendWebSocketMessage]);
 
   const refreshRooms = useCallback(() => {
     dispatch(setRoomsLoading(true));
-    sendWebSocketMessage({ type: 'get_salons' });
+    sendWebSocketMessage('get_salons');
   }, [sendWebSocketMessage, dispatch]);
 
   return {
@@ -322,6 +441,7 @@ export const useWebSocketStore = ({ roomId }: UseWebSocketStoreProps = {}) => {
     // Actions
     sendWebSocketMessage,
     createRoom,
+    createQuickRoom,
     setPlayerReady,
     refreshRooms
   };
