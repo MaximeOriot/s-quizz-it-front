@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { joinRoom } from '../../../util/WebSocket';
-import { useWebSocket } from '../../../util/hooks/useWebSocket';
+import { useSharedWebSocket } from '../../../util/hooks/useSharedWebSocket';
 import type { WebSocketCallbacks } from '../../../util/WebSocket/types';
 
 interface UseWebSocketConnectionProps {
@@ -50,7 +50,8 @@ export const useWebSocketConnection = ({
     onOpen: handleOpen
   }), [handleMessage, handleError, handleClose, handleOpen]);
 
-  const socket = useWebSocket({
+  const { socket, sendWebSocketMessage } = useSharedWebSocket({
+    id: `waiting-room-${roomId}`,
     callbacks: stableCallbacks,
     autoConnect: !!roomId // Ne se connecte que s'il y a un roomId
   });
@@ -79,5 +80,5 @@ export const useWebSocketConnection = ({
     };
   }, [roomId, socket, enableTimeout, onTimeout]);
 
-  return socket;
+  return { socket, sendWebSocketMessage };
 }; 

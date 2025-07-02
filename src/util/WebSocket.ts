@@ -26,6 +26,9 @@ export const createWebSocket = (callbacks?: WebSocketCallbacks) => {
     token   // Token JWT pour l'authentification
   ]);
 
+  // Configuration des timeouts
+  socket.binaryType = 'blob';
+
   // Initialisation du gestionnaire de messages
   const messageHandler = new MessageHandler(callbacks || {});
 
@@ -80,6 +83,10 @@ export const createWebSocket = (callbacks?: WebSocketCallbacks) => {
    */
   socket.onerror = (error) => {
     console.error("WebSocket error:", error);
+    // Gérer spécifiquement les erreurs de connexion
+    if (error instanceof Event) {
+      console.error("Erreur de connexion WebSocket:", error.type);
+    }
     if (callbacks?.onError) {
       callbacks.onError(error);
     }

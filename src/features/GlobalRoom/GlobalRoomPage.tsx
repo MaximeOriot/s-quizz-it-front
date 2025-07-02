@@ -1,29 +1,23 @@
 import Header from "../../components/ui/Header";
 import Button from "../../components/ui/Button";
 import LoadingAnimation from "../../components/ui/LoadingAnimation";
-import { useNavigate } from "react-router-dom";
-import { useSelector } from 'react-redux';
+import CreateRoomModal from "../../components/CreateRoomModal";
 import { useState, useEffect } from 'react';
 import { useRoomsData, useGlobalRoomWebSocket } from "./hooks";
 import { RoomCard } from "./components/RoomCard";
 
-interface RootState {
-  auth: {
-    user: string | null;
-    isAuthenticated: boolean;
-  };
-}
-
 function GlobalRoom() {
-  const navigate = useNavigate();
-  const { user } = useSelector((state: RootState) => state.auth);
   const { rooms, updateRooms } = useRoomsData();
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  useGlobalRoomWebSocket({
+  const { socket, sendWebSocketMessage } = useGlobalRoomWebSocket({
     onRoomsUpdate: (newRooms) => {
       updateRooms(newRooms);
       setIsLoading(false);
+    },
+    onCreateRoomSuccess: (roomId) => {
+      handleCreateSuccess(roomId);
     }
   });
 
@@ -37,7 +31,7 @@ function GlobalRoom() {
   }, []);
 
   const handleCreateRoom = () => {
-    navigate("/createRoom");
+    setIsCreateModalOpen(true);
   };
 
   const handleRefresh = () => {
@@ -45,13 +39,27 @@ function GlobalRoom() {
   };
 
   const handleCreateFirstRoom = () => {
-    navigate("/createRoom");
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateModalClose = () => {
+    setIsCreateModalOpen(false);
+  };
+
+  const handleCreateSuccess = (roomId?: number) => {
+    if (roomId) {
+      // Rediriger vers la salle d'attente
+      window.location.href = `/waitingRoom?roomId=${roomId}`;
+    } else {
+      // Rafraîchir la liste des salles après création
+      window.location.reload();
+    }
   };
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header playerName={user ?? localStorage.getItem('username') ?? 'Joueur'} />
-      
+       <Header /> 
+            
       <div className="flex flex-col gap-6 items-center p-4">
         <div className="text-center">
           <h1 className="mb-2 text-3xl font-bold text-foreground">
@@ -99,6 +107,15 @@ function GlobalRoom() {
           </>
         )}
       </div>
+      
+              {/* Modal de création de salle */}
+        <CreateRoomModal
+          isOpen={isCreateModalOpen}
+          onClose={handleCreateModalClose}
+          onSuccess={handleCreateSuccess}
+          socket={socket}
+          sendWebSocketMessage={sendWebSocketMessage}
+        />
     </div>
   );
 }

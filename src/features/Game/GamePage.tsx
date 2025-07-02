@@ -1,7 +1,8 @@
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Header from "../../components/ui/Header";
+import { useGameWebSocket } from "./hooks";
 
 // Types pour le state Redux
 interface RootState {
@@ -29,7 +30,7 @@ interface RootState {
 // Types pour les messages WebSocket
 interface WebSocketMessage {
   type: 'player_answer' | 'next_question' | 'game_end' | 'player_joined' | 'waiting_players';
-  payload: any;
+  payload: Record<string, unknown>;
 }
 
 interface PlayerAnswer {
@@ -42,7 +43,6 @@ interface PlayerAnswer {
 
 export default function GamePage() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   
   // État local du composant
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -61,93 +61,43 @@ export default function GamePage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const timeLeftRef = useRef(20);
   const selectedAnswerRef = useRef<number | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
 
   // Sélecteurs Redux
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
   const { questions, playerName, isGameStarted, gameId, gameType } = useSelector((state: RootState) => state.game);
 
-  // Initialisation WebSocket pour le multijoueur
-  useEffect(() => {
-    if (gameType === 'MULTIPLAYER' && gameId) {
-      initializeWebSocket();
-    }
-    
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [gameType, gameId]);
-
-  const initializeWebSocket = () => {
-    const wsUrl = `wss://your-websocket-url/game/${gameId}`;
-    wsRef.current = new WebSocket(wsUrl);
-    
-    wsRef.current.onopen = () => {
-      console.log('WebSocket connecté');
-      // Envoyer l'information du joueur au serveur
-      sendWebSocketMessage({
-        type: 'player_joined',
-        payload: {
-          playerId: user || playerName,
-          playerName: playerName,
-          gameId: gameId
-        }
+  // WebSocket partagé pour le multijoueur
+  const { socket } = useGameWebSocket({
+    gameId,
+    onWaitingPlayers: (playersAnswered, totalPlayers) => {
+      setWaitingForPlayers(true);
+      setPlayersAnswered(playersAnswered);
+      setTotalPlayers(totalPlayers);
+    },
+    onNextQuestion: (questionIndex, scores) => {
+      setWaitingForPlayers(false);
+      setPlayersAnswered([]);
+      setCurrentQuestionIndex(questionIndex);
+      setTimeLeft(20);
+      setSelectedAnswer(null);
+      setIsAnswering(false);
+      setPlayersScores(scores);
+    },
+    onGameEnd: (finalScores) => {
+      navigate('/results', { 
+        state: { 
+          score, 
+          totalQuestions: questions.length,
+          playersScores: finalScores,
+          isMultiplayer: true
+        } 
       });
-    };
-    
-    wsRef.current.onmessage = (event) => {
-      const message: WebSocketMessage = JSON.parse(event.data);
-      handleWebSocketMessage(message);
-    };
-    
-    wsRef.current.onclose = () => {
-      console.log('WebSocket fermé');
-    };
-    
-    wsRef.current.onerror = (error) => {
-      console.error('Erreur WebSocket:', error);
-    };
-  };
-
-  const sendWebSocketMessage = (message: WebSocketMessage) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
     }
-  };
+  });
 
-  const handleWebSocketMessage = (message: WebSocketMessage) => {
-    switch (message.type) {
-      case 'waiting_players':
-        setWaitingForPlayers(true);
-        setPlayersAnswered(message.payload.playersAnswered || []);
-        setTotalPlayers(message.payload.totalPlayers || 0);
-        break;
-        
-      case 'next_question':
-        setWaitingForPlayers(false);
-        setPlayersAnswered([]);
-        setCurrentQuestionIndex(message.payload.questionIndex);
-        setTimeLeft(20);
-        setSelectedAnswer(null);
-        setIsAnswering(false);
-        setPlayersScores(message.payload.scores || {});
-        break;
-        
-      case 'game_end':
-        navigate('/results', { 
-          state: { 
-            score, 
-            totalQuestions: questions.length,
-            playersScores: message.payload.finalScores,
-            isMultiplayer: true
-          } 
-        });
-        break;
-        
-      default:
-        break;
+  const sendGameMessage = (message: WebSocketMessage) => {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(message));
     }
   };
 
@@ -231,9 +181,9 @@ export default function GamePage() {
         timeToAnswer: 20 - timeLeft
       };
       
-      sendWebSocketMessage({
+      sendGameMessage({
         type: 'player_answer',
-        payload: playerAnswer
+        payload: playerAnswer as unknown as Record<string, unknown>
       });
       
       setWaitingForPlayers(true);
@@ -268,9 +218,6 @@ export default function GamePage() {
   useEffect(() => {
     return () => {
       clearTimer();
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
     };
   }, [clearTimer]);
 
@@ -287,7 +234,8 @@ export default function GamePage() {
 
   return (
     <div className="min-h-screen">
-      <Header playerName={user || playerName || localStorage.getItem('username') || 'Joueur'} />
+      
+      <Header />
       
       <div className="container px-4 py-8 mx-auto">
         {/* En-tête de la question */}
@@ -320,12 +268,12 @@ export default function GamePage() {
 
         {/* Indicateur d'attente multijoueur */}
         {waitingForPlayers && gameType === 'MULTIPLAYER' && (
-          <div className="p-4 mb-6 text-center rounded-lg bg-yellow-100 border border-yellow-400">
+          <div className="p-4 mb-6 text-center bg-yellow-100 rounded-lg border border-yellow-400">
             <p className="text-yellow-800">
               En attente des autres joueurs... ({playersAnswered.length}/{totalPlayers})
             </p>
             <div className="flex justify-center mt-2">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-800"></div>
+              <div className="w-6 h-6 rounded-full border-b-2 border-yellow-800 animate-spin"></div>
             </div>
           </div>
         )}
@@ -363,8 +311,8 @@ export default function GamePage() {
 
         {/* Scores des autres joueurs (multijoueur) */}
         {gameType === 'MULTIPLAYER' && Object.keys(playersScores).length > 0 && (
-          <div className="p-4 rounded-lg bg-gray-100">
-            <h4 className="font-bold mb-2">Scores actuels :</h4>
+          <div className="p-4 bg-gray-100 rounded-lg">
+            <h4 className="mb-2 font-bold">Scores actuels :</h4>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(playersScores).map(([playerName, score]) => (
                 <div key={playerName} className="flex justify-between">
