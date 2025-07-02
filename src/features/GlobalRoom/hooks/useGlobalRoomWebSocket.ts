@@ -1,13 +1,14 @@
 import { useCallback, useMemo } from 'react';
-import { useSharedWebSocket } from '../../../util/hooks/useSharedWebSocket';
+import { useWebSocket } from '../../../hooks/useWebSocket';
 import type { Room } from './useRoomsData';
 
 interface UseGlobalRoomWebSocketProps {
   onRoomsUpdate: (rooms: Room[]) => void;
   onCreateRoomSuccess?: (roomId: number) => void;
+  onModalSuccess?: (roomId: number) => void;
 }
 
-export const useGlobalRoomWebSocket = ({ onRoomsUpdate, onCreateRoomSuccess }: UseGlobalRoomWebSocketProps) => {
+export const useGlobalRoomWebSocket = ({ onRoomsUpdate, onCreateRoomSuccess, onModalSuccess }: UseGlobalRoomWebSocketProps) => {
   const handleMessage = useCallback((data: unknown) => {
     if (data && typeof data === 'object' && 'type' in data) {
       const messageData = data as { type: string; [key: string]: unknown };
@@ -18,10 +19,13 @@ export const useGlobalRoomWebSocket = ({ onRoomsUpdate, onCreateRoomSuccess }: U
       
       // Gérer la création de salon réussie
       if (messageData.type === 'salon_created' && 'roomId' in messageData) {
-        onCreateRoomSuccess?.(messageData.roomId as number);
+        const roomId = messageData.roomId as number;
+        console.log('Salle créée avec succès, roomId:', roomId);
+        onCreateRoomSuccess?.(roomId);
+        onModalSuccess?.(roomId);
       }
     }
-  }, [onRoomsUpdate, onCreateRoomSuccess]);
+  }, [onRoomsUpdate, onCreateRoomSuccess, onModalSuccess]);
 
   const handleError = useCallback((error: Event) => {
     console.error("Erreur WebSocket dans GlobalRoom:", error);
@@ -43,7 +47,7 @@ export const useGlobalRoomWebSocket = ({ onRoomsUpdate, onCreateRoomSuccess }: U
     onClose: handleClose
   }), [handleMessage, handleError, handleOpen, handleClose]);
 
-  const { socket, sendWebSocketMessage } = useSharedWebSocket({
+  const { socket, sendWebSocketMessage } = useWebSocket({
     id: 'global-room',
     callbacks: stableCallbacks
   });

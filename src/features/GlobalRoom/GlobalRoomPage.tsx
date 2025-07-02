@@ -10,14 +10,24 @@ function GlobalRoom() {
   const { rooms, updateRooms } = useRoomsData();
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [forceCloseModal, setForceCloseModal] = useState(false);
 
-  const { socket, sendWebSocketMessage } = useGlobalRoomWebSocket({
+  useGlobalRoomWebSocket({
     onRoomsUpdate: (newRooms) => {
       updateRooms(newRooms);
       setIsLoading(false);
     },
     onCreateRoomSuccess: (roomId) => {
       handleCreateSuccess(roomId);
+    },
+    onModalSuccess: (roomId) => {
+      // Forcer la fermeture du modal quand la création réussit
+      console.log('Modal: Salle créée avec succès, roomId:', roomId);
+      setForceCloseModal(true);
+      setTimeout(() => {
+        setIsCreateModalOpen(false);
+        setForceCloseModal(false);
+      }, 100);
     }
   });
 
@@ -47,12 +57,18 @@ function GlobalRoom() {
   };
 
   const handleCreateSuccess = (roomId?: number) => {
+    console.log('Salle créée avec succès, roomId:', roomId);
+    
+    // Fermer le modal
+    setIsCreateModalOpen(false);
+    
     if (roomId) {
       // Rediriger vers la salle d'attente
       window.location.href = `/waitingRoom?roomId=${roomId}`;
     } else {
-      // Rafraîchir la liste des salles après création
-      window.location.reload();
+      // Si pas de roomId, on attend que la liste des salles soit mise à jour
+      // par le message salons_init du serveur
+      console.log('En attente de la mise à jour de la liste des salles...');
     }
   };
 
@@ -112,9 +128,7 @@ function GlobalRoom() {
         <CreateRoomModal
           isOpen={isCreateModalOpen}
           onClose={handleCreateModalClose}
-          onSuccess={handleCreateSuccess}
-          socket={socket}
-          sendWebSocketMessage={sendWebSocketMessage}
+          forceClose={forceCloseModal}
         />
     </div>
   );

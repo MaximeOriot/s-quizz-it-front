@@ -8,6 +8,10 @@ import { Provider } from 'react-redux'
 import store from './store'
 import { WebSocketProvider } from './contexts/WebSocketContext'
 import { PlayerProvider } from './contexts/PlayerContext'
+import { initWebSocket } from './util/initWebSocket'
+
+// Initialiser le WebSocket au démarrage de l'application
+initWebSocket();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

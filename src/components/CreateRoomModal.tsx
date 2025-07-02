@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Button from './ui/Button';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 interface CreateRoomData {
   label: string;
@@ -10,12 +11,10 @@ interface CreateRoomData {
 interface CreateRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
-  socket?: WebSocket | null;
-  sendWebSocketMessage?: (message: unknown) => void;
+  forceClose?: boolean;
 }
 
-function CreateRoomModal({ isOpen, onClose, onSuccess, socket, sendWebSocketMessage }: CreateRoomModalProps) {
+function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) {
   const [formData, setFormData] = useState<CreateRoomData>({
     label: '',
     difficulte: 1,
@@ -25,9 +24,15 @@ function CreateRoomModal({ isOpen, onClose, onSuccess, socket, sendWebSocketMess
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { sendWebSocketMessage } = useWebSocket({
+    id: 'create-room-modal',
+    callbacks: {},
+    autoConnect: false
+  });
+
   // Réinitialiser le formulaire quand le modal se ferme
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || forceClose) {
       setFormData({
         label: '',
         difficulte: 1,
@@ -36,7 +41,7 @@ function CreateRoomModal({ isOpen, onClose, onSuccess, socket, sendWebSocketMess
       setError(null);
       setIsLoading(false);
     }
-  }, [isOpen]);
+  }, [isOpen, forceClose]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -58,23 +63,15 @@ function CreateRoomModal({ isOpen, onClose, onSuccess, socket, sendWebSocketMess
         sendWebSocketMessage(message);
         console.log('Message WebSocket envoyé:', message);
         
-        // Fermer le modal après l'envoi du message
-        // La réponse sera gérée par le hook principal
+        // Timeout de sécurité (10 secondes)
         setTimeout(() => {
-          onClose();
-          onSuccess?.();
-        }, 1000); // Petit délai pour montrer le message de création
-      } else if (socket && socket.readyState === WebSocket.OPEN) {
-        const message = `create:${JSON.stringify(formData)}`;
-        socket.send(message);
-        console.log('Message WebSocket envoyé:', message);
+          if (isLoading) {
+            console.warn('Timeout: Aucune réponse du serveur pour la création de salle');
+            setError('Timeout: Le serveur n\'a pas répondu. Veuillez réessayer.');
+            setIsLoading(false);
+          }
+        }, 10000);
         
-        // Fermer le modal après l'envoi du message
-        // La réponse sera gérée par le hook principal
-        setTimeout(() => {
-          onClose();
-          onSuccess?.();
-        }, 1000); // Petit délai pour montrer le message de création
       } else {
         throw new Error('WebSocket non connecté');
       }

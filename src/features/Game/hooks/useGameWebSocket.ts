@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useSharedWebSocket } from '../../../util/hooks/useSharedWebSocket';
+import { useWebSocket } from '../../../hooks/useWebSocket';
 
 interface UseGameWebSocketProps {
   gameId: string | null;
@@ -61,7 +61,7 @@ export const useGameWebSocket = ({
     onClose: handleClose
   }), [handleMessage, handleError, handleOpen, handleClose]);
 
-  const { socket, sendWebSocketMessage } = useSharedWebSocket({
+  const { socket, sendWebSocketMessage } = useWebSocket({
     id: `game-${gameId}`,
     callbacks: stableCallbacks,
     autoConnect: !!gameId // Ne se connecte que s'il y a un gameId

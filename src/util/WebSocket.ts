@@ -1,8 +1,5 @@
 import type { WebSocketCallbacks } from './WebSocket/types';
-import { WebSocketMessageHandler as MessageHandler } from './WebSocket/messageHandler';
-import { joinRoom, sendPlayerReady } from './WebSocket/actions';
 
-export { joinRoom, sendPlayerReady };
 export type { WebSocketCallbacks } from './WebSocket/types';
 
 /**
@@ -29,8 +26,7 @@ export const createWebSocket = (callbacks?: WebSocketCallbacks) => {
   // Configuration des timeouts
   socket.binaryType = 'blob';
 
-  // Initialisation du gestionnaire de messages
-  const messageHandler = new MessageHandler(callbacks || {});
+  // Pas de gestionnaire de messages centralisé, les callbacks sont gérés directement
 
   /**
    * Gestionnaire d'événement : Connexion établie
@@ -52,7 +48,9 @@ export const createWebSocket = (callbacks?: WebSocketCallbacks) => {
       // Traitement des messages texte (JSON)
       if (typeof event.data === 'string') {
         const data = JSON.parse(event.data);
-        messageHandler.handleMessage(data);
+        if (callbacks?.onMessage) {
+          callbacks.onMessage(data);
+        }
       } 
       // Traitement des messages Blob (données binaires)
       else if (event.data instanceof Blob) {
@@ -61,7 +59,9 @@ export const createWebSocket = (callbacks?: WebSocketCallbacks) => {
           try {
             const text = reader.result as string;
             const data = JSON.parse(text);
-            messageHandler.handleMessage(data);
+            if (callbacks?.onMessage) {
+              callbacks.onMessage(data);
+            }
           } catch (error) {
             console.error("Erreur parsing Blob data:", error);
           }
@@ -83,10 +83,6 @@ export const createWebSocket = (callbacks?: WebSocketCallbacks) => {
    */
   socket.onerror = (error) => {
     console.error("WebSocket error:", error);
-    // Gérer spécifiquement les erreurs de connexion
-    if (error instanceof Event) {
-      console.error("Erreur de connexion WebSocket:", error.type);
-    }
     if (callbacks?.onError) {
       callbacks.onError(error);
     }
