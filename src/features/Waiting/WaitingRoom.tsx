@@ -41,12 +41,11 @@ function WaitingRoom() {
     if (roomLoading) {
       const timeout = setTimeout(() => {
         console.warn('⚠️ Timeout de sécurité: Chargement de la salle depuis plus de 30 secondes');
-        console.warn('⚠️ État actuel:', { isConnected, hasReceivedData, roomLoading, currentRoom });
       }, 30000); // 30 secondes
 
       return () => clearTimeout(timeout);
     }
-  }, [roomLoading, isConnected, hasReceivedData, currentRoom]);
+  }, [roomLoading]);
 
   // Récupérer l'id du joueur courant depuis localStorage (défini à la connexion WebSocket)
   const userId = localStorage.getItem('userId');
@@ -82,13 +81,11 @@ function WaitingRoom() {
     setPlayerReady();
   };
 
-  // Debug: afficher les données des joueurs
-  console.log('Current room players:', players);
-  console.log('Current player:', currentPlayer);
-  console.log('Is ready:', isReady);
-  console.log('userId:', userId);
-  console.log('Player IDs in room:', players.map(p => p.id));
-  console.log('Looking for userId:', userId);
+  // Debug: afficher les données des joueurs (optionnel)
+  // console.log('Current room players:', players);
+  // console.log('Current player:', currentPlayer);
+  // console.log('Is ready:', isReady);
+  // console.log('userId:', userId);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -106,17 +103,12 @@ function WaitingRoom() {
             <p className="mb-2 text-sm text-secondary">
               Si le chargement persiste, vérifiez la connexion WebSocket
             </p>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                console.log('🔧 Forçage de la sortie du chargement...');
-                console.log('🔧 État actuel:', { isConnected, hasReceivedData, roomLoading, currentRoom });
-                // Forcer la sortie du chargement en cas de problème
-                window.location.reload();
-              }}
-            >
-              Recharger la page
-            </Button>
+                          <Button
+                variant="secondary"
+                onClick={() => window.location.reload()}
+              >
+                Recharger la page
+              </Button>
           </div>
         </div>
       ) : (
@@ -221,10 +213,7 @@ function WaitingRoom() {
                 variant="secondary"
                 textSize="sm"
                 width="6xl"
-                onClick={() => {
-                  console.log('Actualisation de la liste des salles...');
-                  refreshRooms();
-                }}
+                onClick={refreshRooms}
               >
                 Actualiser la liste des salles
               </Button>
