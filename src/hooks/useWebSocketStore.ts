@@ -693,10 +693,8 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
 
   // Actions
   const createRoom = useCallback((roomData: { label: string; difficulte: number; j_max: number }) => {
-    // Utiliser le format attendu par le backend: create:{"label":"Mon Salon","difficulte":2,"j_max":4}
-    // Éviter le double JSON.stringify qui cause l'échappement
     const message = `create:${JSON.stringify(roomData)}`;
-    console.log('📤 Envoi du message de création:', message);
+    console.log('Envoi du message de création:', message);
     sendWebSocketMessage(message);
   }, [sendWebSocketMessage]);
 
