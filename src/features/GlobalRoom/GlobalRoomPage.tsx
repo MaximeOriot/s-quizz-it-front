@@ -2,50 +2,38 @@ import Header from "../../components/ui/Header";
 import Button from "../../components/ui/Button";
 import LoadingAnimation from "../../components/ui/LoadingAnimation";
 import CreateRoomModal from "../../components/CreateRoomModal";
-import { useState, useEffect } from 'react';
-import { useRoomsData, useGlobalRoomWebSocket } from "./hooks";
+import { useState } from 'react';
+import { useWebSocketStore } from "../../hooks/useWebSocketStore";
 import { RoomCard } from "./components/RoomCard";
 
 function GlobalRoom() {
-  const { rooms, updateRooms } = useRoomsData();
-  const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [forceCloseModal, setForceCloseModal] = useState(false);
 
-  useGlobalRoomWebSocket({
-    onRoomsUpdate: (newRooms) => {
-      updateRooms(newRooms);
-      setIsLoading(false);
-    },
-    onCreateRoomSuccess: (roomId) => {
-      handleCreateSuccess(roomId);
-    },
-    onModalSuccess: (roomId) => {
-      // Forcer la fermeture du modal quand la création réussit
-      console.log('Modal: Salle créée avec succès, roomId:', roomId);
-      setForceCloseModal(true);
-      setTimeout(() => {
-        setIsCreateModalOpen(false);
-        setForceCloseModal(false);
-      }, 100);
+  const { 
+    isConnected, 
+    hasReceivedData, 
+    rooms, 
+    roomsLoading, 
+    refreshRooms 
+  } = useWebSocketStore();
+
+  // Déterminer le message de chargement en fonction de l'état de connexion
+  const getLoadingMessage = () => {
+    if (!isConnected) {
+      return "Connexion au serveur...";
     }
-  });
-
-  // Timeout pour éviter un chargement infini
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setIsLoading(false);
-    }, 10000);
-
-    return () => clearTimeout(timeout);
-  }, []);
+    if (!hasReceivedData) {
+      return "Récupération des salles...";
+    }
+    return "Récupération des salles disponibles";
+  };
 
   const handleCreateRoom = () => {
     setIsCreateModalOpen(true);
   };
 
   const handleRefresh = () => {
-    window.location.reload();
+    refreshRooms();
   };
 
   const handleCreateFirstRoom = () => {
@@ -56,21 +44,7 @@ function GlobalRoom() {
     setIsCreateModalOpen(false);
   };
 
-  const handleCreateSuccess = (roomId?: number) => {
-    console.log('Salle créée avec succès, roomId:', roomId);
-    
-    // Fermer le modal
-    setIsCreateModalOpen(false);
-    
-    if (roomId) {
-      // Rediriger vers la salle d'attente
-      window.location.href = `/waitingRoom?roomId=${roomId}`;
-    } else {
-      // Si pas de roomId, on attend que la liste des salles soit mise à jour
-      // par le message salons_init du serveur
-      console.log('En attente de la mise à jour de la liste des salles...');
-    }
-  };
+
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -95,11 +69,11 @@ function GlobalRoom() {
           </Button>
         </div>
 
-        {isLoading ? (
+        {roomsLoading ? (
           <div className="flex flex-1 justify-center items-center min-h-[400px]">
             <LoadingAnimation
               message="Chargement des salles"
-              subMessage="Récupération des salles disponibles"
+              subMessage={getLoadingMessage()}
               variant="dots"
               size="lg"
             />
@@ -128,7 +102,6 @@ function GlobalRoom() {
         <CreateRoomModal
           isOpen={isCreateModalOpen}
           onClose={handleCreateModalClose}
-          forceClose={forceCloseModal}
         />
     </div>
   );

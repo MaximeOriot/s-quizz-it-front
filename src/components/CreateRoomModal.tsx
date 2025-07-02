@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Button from './ui/Button';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useWebSocketStore } from '../hooks/useWebSocketStore';
 
 interface CreateRoomData {
   label: string;
@@ -24,11 +24,7 @@ function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { sendWebSocketMessage } = useWebSocket({
-    id: 'create-room-modal',
-    callbacks: {},
-    autoConnect: false
-  });
+  const { createRoom } = useWebSocketStore();
 
   // Réinitialiser le formulaire quand le modal se ferme
   useEffect(() => {
@@ -57,24 +53,19 @@ function CreateRoomModal({ isOpen, onClose, forceClose }: CreateRoomModalProps) 
     setError(null);
 
     try {
-      // Envoyer le message WebSocket pour créer le salon
-      if (sendWebSocketMessage) {
-        const message = `create:${JSON.stringify(formData)}`;
-        sendWebSocketMessage(message);
-        console.log('Message WebSocket envoyé:', message);
-        
-        // Timeout de sécurité (10 secondes)
-        setTimeout(() => {
-          if (isLoading) {
-            console.warn('Timeout: Aucune réponse du serveur pour la création de salle');
-            setError('Timeout: Le serveur n\'a pas répondu. Veuillez réessayer.');
-            setIsLoading(false);
-          }
-        }, 10000);
-        
-      } else {
-        throw new Error('WebSocket non connecté');
-      }
+      // Créer la salle via le hook centralisé
+      createRoom(formData);
+      console.log('Demande de création de salle envoyée:', formData);
+      
+      // Timeout de sécurité (10 secondes)
+      setTimeout(() => {
+        if (isLoading) {
+          console.warn('Timeout: Aucune réponse du serveur pour la création de salle');
+          setError('Timeout: Le serveur n\'a pas répondu. Veuillez réessayer.');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
     } catch (err) {
       console.error('Erreur lors de la création de la salle:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');

@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/ui/Button";
-import type { Room } from "../hooks/useRoomsData";
-import { useRoomUtils } from "../hooks/useRoomUtils";
+import type { Room } from "../../../store/websocketSlice";
 
 interface RoomCardProps {
   room: Room;
@@ -9,14 +8,42 @@ interface RoomCardProps {
 
 export const RoomCard = ({ room }: RoomCardProps) => {
   const navigate = useNavigate();
-  const {
-    getStatusColor,
-    getStatusText,
-    getDifficultyText,
-    getDifficultyColor,
-    getButtonText,
-    getRoomProgress
-  } = useRoomUtils();
+
+  const getStatusColor = (commence: boolean) => {
+    return commence ? "text-blue-400" : "text-green-500";
+  };
+
+  const getStatusText = (commence: boolean) => {
+    return commence ? "En cours" : "En attente";
+  };
+
+  const getDifficultyText = (difficulte: number) => {
+    switch (difficulte) {
+      case 1: return "Facile";
+      case 2: return "Moyen";
+      case 3: return "Difficile";
+      default: return "Inconnu";
+    }
+  };
+
+  const getDifficultyColor = (difficulte: number) => {
+    switch (difficulte) {
+      case 1: return "bg-green-500";
+      case 2: return "bg-yellow-500";
+      case 3: return "bg-red-500";
+      default: return "bg-gray-500";
+    }
+  };
+
+  const getButtonText = (room: Room) => {
+    if (room.commence) return "En cours";
+    if (room.j_actuelle >= room.j_max) return "Pleine";
+    return "Rejoindre";
+  };
+
+  const getRoomProgress = (room: Room) => {
+    return (room.j_actuelle / room.j_max) * 100;
+  };
 
   const handleJoinRoom = () => {
     navigate(`/waitingRoom?roomId=${room.id}`);

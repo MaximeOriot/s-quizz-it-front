@@ -1,67 +1,51 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "../../components/ui/Header";
 import Button from "../../components/ui/Button";
 import LoadingAnimation from "../../components/ui/LoadingAnimation";
-import { useWebSocketConnection, useRoomData, useMessageHandlers } from "./hooks";
+import { useWebSocketStore } from "../../hooks/useWebSocketStore";
 
 function WaitingRoom() {
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('roomId');
   const [isReady, setIsReady] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const {
-    roomData,
-    updateRoomInfo,
-    updatePlayers,
-    updatePlayerReady,
-    updateFromSalon
-  } = useRoomData(roomId);
-
-  const {
-    handleMessage,
-    handleError,
-    handleTimeout
-  } = useMessageHandlers({
-    roomId,
-    onRoomInfo: updateRoomInfo,
-    onPlayersUpdate: updatePlayers,
-    onPlayerReady: updatePlayerReady,
-    onSalonInit: updateFromSalon,
-    onGameStart: () => console.log("Le jeu commence !"),
-    onLoadingComplete: () => setIsLoading(false)
-  });
-
-  // Stabiliser les callbacks pour éviter les reconnexions
-  const stableCallbacks = useMemo(() => ({
-    onMessage: handleMessage,
-    onError: handleError
-  }), [handleMessage, handleError]);
-
-  useWebSocketConnection({
-    roomId,
-    callbacks: stableCallbacks,
-    onTimeout: handleTimeout
-  });
+  const { 
+    isConnected, 
+    hasReceivedData, 
+    currentRoom, 
+    roomLoading, 
+    setPlayerReady 
+  } = useWebSocketStore({ roomId });
 
   const getReady = () => {
     setIsReady(!isReady);
-    // TODO: Utiliser sendPlayerReady quand le socket sera disponible
+    setPlayerReady(!isReady);
   };
 
-  const totalPlayers = roomData.players.length;
+  const totalPlayers = currentRoom?.players.length || 0;
   const missingPlayers = Math.max(0, 10 - totalPlayers);
+
+  // Déterminer le message de chargement en fonction de l'état de connexion
+  const getLoadingMessage = () => {
+    if (!isConnected) {
+      return "Connexion au serveur...";
+    }
+    if (!hasReceivedData) {
+      return "Rejoindre la salle...";
+    }
+    return "Récupération des informations de la salle";
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
 
-      {isLoading ? (
+      {roomLoading ? (
         <div className="flex flex-1 justify-center items-center">
           <LoadingAnimation
             message="Connexion à la salle"
-            subMessage="Récupération des informations de la salle"
+            subMessage={getLoadingMessage()}
             variant="dots"
             size="lg"
           />
@@ -71,7 +55,7 @@ function WaitingRoom() {
           <div className="w-1/2">
             <h2 className="mb-4 text-xl font-semibold">En attente de joueurs :</h2>
             <ul>
-              {roomData.players.map((player, index) => (
+              {currentRoom?.players.map((player, index) => (
                 <li key={index} className="flex items-center mb-2">
                   <img
                     src={player.avatar}
@@ -105,13 +89,13 @@ function WaitingRoom() {
             </div>
           </div>
 
-          {roomData.quizz && (
+          {currentRoom?.quizz && (
             <div className="flex justify-center items-center w-1/2">
               <div className="px-10 py-8 w-full max-w-xl text-center rounded-2xl bg-secondary">
-                <h2 className="mb-2 text-2xl font-bold text-primary">{roomData.quizz.label}</h2>
-                <p className="mb-6 text-primary">{roomData.quizz.description}</p>
+                <h2 className="mb-2 text-2xl font-bold text-primary">{currentRoom.quizz.label}</h2>
+                <p className="mb-6 text-primary">{currentRoom.quizz.description}</p>
                 <div className="flex gap-4 justify-center">
-                  {roomData.quizz?.themes && roomData.quizz.themes.map((theme, idx) => (
+                  {currentRoom.quizz?.themes && currentRoom.quizz.themes.map((theme, idx) => (
                     <span
                       key={idx}
                       className="px-4 py-1 text-sm font-semibold bg-sky-400 rounded-full"
