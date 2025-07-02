@@ -55,7 +55,7 @@ function WaitingRoom() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header playerName={localStorage.getItem('username')} />
+      <Header />
 
       {isLoading ? (
         <div className="flex flex-1 justify-center items-center">
