@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import Bento from '../../components/ui/Bento';
 import Header from '../../components/ui/Header';
 import { useDispatch, useSelector } from 'react-redux';
-import { prepareSoloGameQuestionThunk } from '../Game/gameThunks';
+import { fetchQuestionsThunk } from '../Game/gameThunks';
 import { useEffect } from 'react';
 import { getAuthenticatedUserThunk } from '../auth/authThunks';
 import Button from '../../components/ui/Button';
@@ -60,7 +60,7 @@ function PlayPage() {
       });
       
       // Attendre que les questions soient récupérées avant de naviguer
-      await dispatch(prepareSoloGameQuestionThunk()).unwrap();
+      await dispatch(fetchQuestionsThunk()).unwrap();
       navigate('/game'); // Redirection vers la page de jeu
     } catch (error) {
       console.error('Erreur lors de la préparation du jeu solo:', error);

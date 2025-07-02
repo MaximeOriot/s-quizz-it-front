@@ -7,6 +7,7 @@ import GamePage from "../features/Game/GamePage";
 import GlobalRoomPage from "../features/GlobalRoom/GlobalRoomPage";
 import Profile from "../features/Profile/Profile";
 import ProtectedRoute from "./ProtectedRoute";
+import ResultsPage from "../features/Game/ResultsPage";
 
 export const router = createBrowserRouter([
     {
@@ -36,6 +37,10 @@ export const router = createBrowserRouter([
     {
         path: '/profile',
         element: <Profile />
+    },
+    {
+        path: '/results',
+        element: <ResultsPage />
     },
     {
         path: '*',

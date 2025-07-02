@@ -31,6 +31,9 @@ export const useGameLogic = ({ questions, gameType, gameId, user, playerName }: 
     playersScores: {}
   });
 
+  // Ajouter un état pour compter les bonnes réponses
+  const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
+
   // Déclarer les fonctions qui vont être utilisées dans les callbacks
   let timerActions: {
     timeLeft: number;
@@ -62,9 +65,17 @@ export const useGameLogic = ({ questions, gameType, gameId, user, playerName }: 
         timerActions.startTimer();
       }
     } else {
-      navigate('/results', { state: { score: gameState.score, totalQuestions: questions.length } });
+      // Quiz terminé - redirection vers les résultats avec le vrai nombre de bonnes réponses
+      navigate('/results', { 
+        state: { 
+          score: gameState.score, 
+          totalQuestions: questions.length,
+          correctAnswers: correctAnswersCount,
+          isMultiplayer: false
+        } 
+      });
     }
-  }, [gameType, gameState.currentQuestionIndex, gameState.score, questions.length, navigate]);
+  }, [gameType, gameState.currentQuestionIndex, gameState.score, questions.length, navigate, correctAnswersCount]);
 
   const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
     switch (message.type) {
@@ -109,6 +120,7 @@ export const useGameLogic = ({ questions, gameType, gameId, user, playerName }: 
         break;
         
       case 'game_end':
+        // Multijoueur - redirection vers les résultats avec scores des joueurs
         navigate('/results', { 
           state: { 
             score: gameState.score, 
@@ -205,6 +217,11 @@ export const useGameLogic = ({ questions, gameType, gameId, user, playerName }: 
         score: isCorrect ? prev.score + (result.pointsGagnes || 1) : prev.score
       }));
       
+      // Incrémenter le compteur de bonnes réponses
+      if (isCorrect) {
+        setCorrectAnswersCount(prev => prev + 1);
+      }
+      
       if (!isCorrect && result.bonneReponse) {
         const correctIndex = currentQuestion.reponses.findIndex(r => 
           r.label.toLowerCase() === result.bonneReponse.toLowerCase()
@@ -232,6 +249,11 @@ export const useGameLogic = ({ questions, gameType, gameId, user, playerName }: 
         score: isCorrect ? prev.score + 1 : prev.score,
         correctAnswerIndex: isCorrect ? null : currentQuestion.reponses.findIndex(r => r.isCorrect)
       }));
+      
+      // Incrémenter le compteur de bonnes réponses pour le fallback aussi
+      if (isCorrect) {
+        setCorrectAnswersCount(prev => prev + 1);
+      }
       
       setTimeout(() => {
         resetTimer();
