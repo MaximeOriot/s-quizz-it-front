@@ -51,7 +51,7 @@ export default function ResultsPage() {
   };
 
   const handleBackToHome = () => {
-    navigate('/');
+    navigate('/play');
   };
 
   return (
