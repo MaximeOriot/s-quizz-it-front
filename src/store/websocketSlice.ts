@@ -47,6 +47,9 @@ interface WebSocketState {
   currentRoom: RoomData | null;
   roomLoading: boolean;
   
+  // État du jeu
+  allPlayersReady: boolean;
+  
   // Messages d'erreur
   error: string | null;
 }
@@ -58,6 +61,7 @@ const initialState: WebSocketState = {
   roomsLoading: true,
   currentRoom: null,
   roomLoading: true,
+  allPlayersReady: false,
   error: null
 };
 
@@ -117,6 +121,10 @@ const websocketSlice = createSlice({
       }
     },
     
+    setAllPlayersReady: (state, action: PayloadAction<boolean>) => {
+      state.allPlayersReady = action.payload;
+    },
+    
     setRoomLoading: (state, action: PayloadAction<boolean>) => {
       state.roomLoading = action.payload;
     },
@@ -152,6 +160,7 @@ export const {
   updateRoomPlayers,
   updatePlayerReady,
   updateRoomInfo,
+  setAllPlayersReady,
   setRoomLoading,
   setError,
   resetRoom,

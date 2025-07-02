@@ -9,6 +9,7 @@ import {
   updateRoomPlayers,
   updatePlayerReady,
   updateRoomInfo,
+  setAllPlayersReady,
   setRoomLoading,
   setError,
   resetRoom,
@@ -25,7 +26,7 @@ interface UseWebSocketStoreProps {
 
 export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStoreProps = {}) => {
   const dispatch = useDispatch();
-  const { isConnected, hasReceivedData, rooms, roomsLoading, currentRoom, roomLoading, error } = useSelector(
+  const { isConnected, hasReceivedData, rooms, roomsLoading, currentRoom, roomLoading, allPlayersReady, error } = useSelector(
     (state: RootState) => state.websocket
   );
 
@@ -221,6 +222,46 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
             return;
           }
           
+      // Traitement des messages avec type dans le format user/message
+      if (dataObj.type) {
+        const messageData = dataObj as { type: string; [key: string]: unknown };
+        console.log('🔍 Message avec type détecté (format user/message):', messageData.type);
+        
+        switch (messageData.type) {
+          case 'all_players_ready':
+            console.log('🎮 Tous les joueurs sont prêts ! Le jeu peut commencer.');
+            dispatch(setAllPlayersReady(true));
+            
+            // Mettre à jour le statut de tous les joueurs comme prêts
+            if ('readyPlayers' in messageData && Array.isArray(messageData.readyPlayers)) {
+              console.log('🎮 Joueurs prêts reçus:', messageData.readyPlayers);
+              
+              // Si on a la liste des joueurs prêts, on peut les marquer individuellement
+              // Pour l'instant, on marque tous les joueurs de la salle comme prêts
+              if (currentRoom && currentRoom.players) {
+                const updatedPlayers = currentRoom.players.map(player => ({
+                  ...player,
+                  isReady: true
+                }));
+                dispatch(updateRoomPlayers(updatedPlayers));
+                console.log('🎮 Tous les joueurs marqués comme prêts');
+              }
+            }
+            break;
+            
+          case 'ready_status_update':
+            console.log('Mise à jour du statut prêt reçue:', messageData);
+            if ('playerId' in messageData && 'isReady' in messageData) {
+              console.log('Mise à jour du statut prêt pour le joueur:', messageData.playerId, messageData.isReady);
+              dispatch(updatePlayerReady({
+                playerId: messageData.playerId as string,
+                isReady: messageData.isReady as boolean
+              }));
+            }
+            break;
+        }
+      }
+      
       // Traitement des données de quiz et joueurs
           if (parsedMessage && typeof parsedMessage === 'object') {
         const parsedObj = parsedMessage as Record<string, unknown>;
@@ -404,7 +445,8 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
           break;
           
         case 'all_players_ready':
-          console.log('Tous les joueurs sont prêts !');
+          console.log('🎮 Tous les joueurs sont prêts ! Le jeu peut commencer.');
+          dispatch(setAllPlayersReady(true));
           break;
           
         case 'est prêt':
@@ -760,6 +802,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
     roomsLoading,
     currentRoom,
     roomLoading,
+    allPlayersReady,
     error,
     
     // Actions

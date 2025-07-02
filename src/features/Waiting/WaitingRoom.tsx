@@ -22,6 +22,7 @@ function WaitingRoom() {
     rooms, 
     currentRoom, 
     roomLoading, 
+    allPlayersReady,
     setPlayerReady,
     refreshRooms
   } = useWebSocketStore({ roomId });
@@ -34,6 +35,18 @@ function WaitingRoom() {
       console.log('Données de la salle mises à jour:', roomInfo);
     }
   }, [roomInfo]);
+
+  // Timeout de sécurité pour éviter de rester bloqué en chargement
+  useEffect(() => {
+    if (roomLoading) {
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ Timeout de sécurité: Chargement de la salle depuis plus de 30 secondes');
+        console.warn('⚠️ État actuel:', { isConnected, hasReceivedData, roomLoading, currentRoom });
+      }, 30000); // 30 secondes
+
+      return () => clearTimeout(timeout);
+    }
+  }, [roomLoading, isConnected, hasReceivedData, currentRoom]);
 
   // Récupérer l'id du joueur courant depuis localStorage (défini à la connexion WebSocket)
   const userId = localStorage.getItem('userId');
@@ -82,13 +95,29 @@ function WaitingRoom() {
       <Header />
 
       {roomLoading ? (
-        <div className="flex flex-1 justify-center items-center">
+        <div className="flex flex-col flex-1 gap-4 justify-center items-center">
           <LoadingAnimation
             message="Connexion à la salle"
             subMessage={getLoadingMessage()}
             variant="dots"
             size="lg"
           />
+          <div className="text-center">
+            <p className="mb-2 text-sm text-secondary">
+              Si le chargement persiste, vérifiez la connexion WebSocket
+            </p>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                console.log('🔧 Forçage de la sortie du chargement...');
+                console.log('🔧 État actuel:', { isConnected, hasReceivedData, roomLoading, currentRoom });
+                // Forcer la sortie du chargement en cas de problème
+                window.location.reload();
+              }}
+            >
+              Recharger la page
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-row flex-1 gap-10 mt-6">
@@ -167,9 +196,17 @@ function WaitingRoom() {
               </p>
             )}
 
-            <p className="mt-6 text-sm text-secondary">
-              {missingPlayers} joueurs manquants ou pas prêt avant le lancement
-            </p>
+            {allPlayersReady ? (
+              <div className="p-4 mt-6 bg-green-100 rounded-lg border border-green-400">
+                <p className="font-semibold text-center text-green-800">
+                  🎉 Tous les joueurs sont prêts ! Le jeu peut commencer.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-6 text-sm text-secondary">
+                {missingPlayers} joueurs manquants ou pas prêt avant le lancement
+              </p>
+            )}
 
             <div className="mt-4 space-y-2">
               <Button
