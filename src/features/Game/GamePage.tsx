@@ -20,16 +20,19 @@ export default function GamePage() {
 
   // Démarrer le timer au montage du composant
   useEffect(() => {
-    if (isGameStarted) {
+    if (isGameStarted && questions && questions.length > 0) {
       startTimer();
     }
-  }, [isGameStarted, startTimer, gameState.currentQuestionIndex]);
+  }, [isGameStarted, startTimer, gameState.currentQuestionIndex, questions]);
 
   // Affichage de chargement
   if (!questions || questions.length === 0 || !isGameStarted) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <p>Chargement des questions...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p>Chargement des questions...</p>
+        </div>
       </div>
     );
   }
