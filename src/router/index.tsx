@@ -6,6 +6,7 @@ import WaitingRoom from "../features/Waiting/WaitingRoom";
 import GamePage from "../features/Game/GamePage";
 import GlobalRoomPage from "../features/GlobalRoom/GlobalRoomPage";
 import Profile from "../features/Profile/Profile";
+import ProtectedRoute from "./ProtectedRoute";
 
 export const router = createBrowserRouter([
     {
@@ -35,5 +36,9 @@ export const router = createBrowserRouter([
     {
         path: '/profile',
         element: <Profile />
+    },
+    {
+        path: '*',
+        element: <ProtectedRoute fallback={<HomePage />} />,
     }
 ]);
