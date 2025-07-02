@@ -1,6 +1,6 @@
 import React from 'react';
 import logo from '../../assets/logo-squizzit-removed-bg.png';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../../features/auth/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -18,6 +18,7 @@ interface RootState {
 const Header: React.FC<HeaderProps> = ({ playerName }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   console.log(user);
 
@@ -52,8 +53,8 @@ const Header: React.FC<HeaderProps> = ({ playerName }) => {
   };
 
   return (
-    <nav className="flex justify-between items-center py-3 w-full border-b lg:px-6 border-b-secondary">
-      <div className="flex gap-3 items-center">
+    <nav className="flex items-center justify-between w-full py-3 border-b lg:px-6 border-b-secondary">
+      <div className="flex items-center gap-3">
         <button 
           onClick={() => navigate('/')}
           className="p-0 bg-transparent border-none cursor-pointer"
@@ -66,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ playerName }) => {
           />
         </button>
       </div>
-      <div className='flex gap-4 items-center'>
+      <div className='flex items-center gap-4'>
         {isUserConnected && (
           <button
             onClick={() => handleLogout()}
@@ -78,6 +79,7 @@ const Header: React.FC<HeaderProps> = ({ playerName }) => {
         <div className="text-lg font-semibold">
           Bienvenue, {displayName}!
         </div>
+        <img src='./src/assets/settings.png' width={25} onClick={() => navigate('/profile', { state: { from: location.pathname } })} className='cursor-pointer'/>
       </div>
     </nav>
   )
