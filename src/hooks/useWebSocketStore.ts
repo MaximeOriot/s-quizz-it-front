@@ -82,7 +82,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
             // Mettre à jour les informations de la salle dans le state global
             // Cela permettra de mettre à jour j_actuelle dans roomInfo
             dispatch(setRoomsLoading(true));
-            sendWebSocketMessage('get_salons');
+            sendWebSocketMessage('fetch');
             
             // Forcer la demande des joueurs après avoir mis à jour les infos de la salle
             setTimeout(() => {
@@ -168,7 +168,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
                   console.log('Mise à jour j_actuelle (parsed):', salonData.j_actuelle);
                   // Forcer la mise à jour de la liste des salles pour refléter les changements
                   dispatch(setRoomsLoading(true));
-                  sendWebSocketMessage('get_salons');
+                  sendWebSocketMessage('fetch');
                 }
               }
               break;
@@ -250,7 +250,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
               } else {
                 console.log('Salle créée avec succès');
                 dispatch(setRoomsLoading(true));
-                sendWebSocketMessage('get_salons');
+                sendWebSocketMessage('fetch');
               }
               break;
               
@@ -279,7 +279,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
               console.log('Données de création:', createData);
               
               dispatch(setRoomsLoading(true));
-              sendWebSocketMessage('get_salons');
+              sendWebSocketMessage('fetch');
               
               if (onRoomCreated) {
                 onRoomCreated(Date.now());
@@ -287,6 +287,41 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
             } catch (error) {
               console.error('Erreur lors du parsing des données de création:', error);
             }
+            return;
+          }
+          
+          // Détecter les messages de statut prêt (format: "player_ready-{roomId}-{isReady}")
+          if (typeof parsedMessage === 'string' && parsedMessage.startsWith('player_ready-')) {
+            console.log('🎉 Message de statut prêt reçu:', parsedMessage);
+            const parts = parsedMessage.split('-');
+            if (parts.length === 3) {
+              const [, roomIdFromMessage, isReadyStr] = parts;
+              const isReady = isReadyStr === 'true';
+              console.log('Statut prêt extrait:', { roomIdFromMessage, isReady, currentRoomId: roomId });
+              
+              if (roomIdFromMessage === roomId) {
+                console.log('✅ RoomId correspond, traitement du statut prêt');
+                // Demander une mise à jour de la liste des joueurs pour refléter le changement
+                setTimeout(() => {
+                  console.log('Demande de mise à jour des joueurs après changement de statut prêt');
+                  sendWebSocketMessage(`get_players-${roomId}`);
+                }, 100);
+              }
+            }
+            return;
+          }
+          
+          // Détecter les messages de déconnexion/départ
+          if (typeof parsedMessage === 'string' && (parsedMessage.includes('quitté le salon') || parsedMessage.includes('a quitté') || parsedMessage.includes('disconnected'))) {
+            console.log('🚪 Message de déconnexion/départ détecté:', parsedMessage);
+            
+            // Demander une mise à jour immédiate de la liste des joueurs
+            setTimeout(() => {
+              if (roomId) {
+                console.log('Demande de mise à jour des joueurs après déconnexion...');
+                sendWebSocketMessage(`get_players-${roomId}`);
+              }
+            }, 100);
             return;
           }
           
@@ -338,7 +373,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
                 console.log('Mise à jour j_actuelle:', salonData.j_actuelle);
                 // Forcer la mise à jour de la liste des salles pour refléter les changements
                 dispatch(setRoomsLoading(true));
-                sendWebSocketMessage('get_salons');
+                sendWebSocketMessage('fetch');
               }
             }
           }
@@ -370,7 +405,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
             // Mettre à jour les informations de la salle dans le state global
             // Cela permettra de mettre à jour j_actuelle dans roomInfo
             dispatch(setRoomsLoading(true));
-            sendWebSocketMessage('get_salons');
+            sendWebSocketMessage('fetch');
             
             // Forcer la demande des joueurs après avoir mis à jour les infos de la salle
             setTimeout(() => {
