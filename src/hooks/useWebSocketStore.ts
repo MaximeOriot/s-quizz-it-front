@@ -5,6 +5,7 @@ import {
   setConnected,
   setRooms,
   setRoomsLoading,
+  setCurrentRoom,
   updateRoomPlayers,
   updatePlayerReady,
   updateRoomInfo,
