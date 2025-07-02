@@ -9,7 +9,7 @@ export class Api {
         "Content-Type": "application/json",
         ...extraHeaders,
         };
-
+        this.token = localStorage.getItem('token');
         if (this.token) {
             headers["Authorization"] = `Bearer ${this.token}`;
         }
