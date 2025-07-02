@@ -58,7 +58,7 @@ export class Api {
     return this.request("PUT", url, body);
   }
 
-  static delete(url: string) {
-    return this.request("DELETE", url);
+  static delete(url: string, body?: Record<string, any>) {
+    return this.request("DELETE", url, body);
   }
 }
