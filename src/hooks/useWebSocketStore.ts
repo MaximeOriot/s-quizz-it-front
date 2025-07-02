@@ -190,16 +190,15 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
           dispatch(updateRoomPlayers(parsedObj.players as WaitingPlayer[]));
         }
         
-        if ('salon' in parsedObj && typeof parsedObj.salon === 'object') {
-          console.log('Données de salon détectées:', parsedObj.salon);
-          const salonData = parsedObj.salon as Record<string, unknown>;
-          
-          if (salonData.j_actuelle !== undefined) {
-            console.log('Mise à jour j_actuelle:', salonData.j_actuelle);
-            dispatch(setRoomsLoading(true));
-            sendWebSocketMessage('fetch');
-          }
-        }
+                 if ('salon' in parsedObj && typeof parsedObj.salon === 'object') {
+           console.log('Données de salon détectées:', parsedObj.salon);
+           
+           if ((parsedObj.salon as Record<string, unknown>).j_actuelle !== undefined) {
+             console.log('Mise à jour j_actuelle:', (parsedObj.salon as Record<string, unknown>).j_actuelle);
+             dispatch(setRoomsLoading(true));
+             sendWebSocketMessage('fetch');
+           }
+         }
       }
       return;
     }
@@ -219,7 +218,6 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
         case 'salon_info':
           if ('salon' in messageData) {
             console.log('Informations de salon reçues (format direct):', messageData.salon);
-            const salonData = messageData.salon as Record<string, unknown>;
             
             dispatch(setRoomsLoading(true));
             sendWebSocketMessage('fetch');
@@ -484,11 +482,11 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
     sendWebSocketMessage('rapide');
   }, [sendWebSocketMessage]);
 
-  const setPlayerReady = useCallback((isReady: boolean) => {
-    if (roomId) {
-      sendWebSocketMessage(`player_ready-${roomId}-${isReady}`);
-    }
-  }, [roomId, sendWebSocketMessage]);
+     const setPlayerReady = useCallback(() => {
+     if (roomId) {
+       sendWebSocketMessage(`ready-${roomId}`);
+     }
+   }, [roomId, sendWebSocketMessage]);
 
   const refreshRooms = useCallback(() => {
     dispatch(setRoomsLoading(true));
