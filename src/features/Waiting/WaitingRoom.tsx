@@ -55,10 +55,10 @@ function WaitingRoom() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header playerName={localStorage.getItem('username')} />
+      <Header />
 
       {isLoading ? (
-        <div className="flex flex-1 justify-center items-center">
+        <div className="flex items-center justify-center flex-1">
           <LoadingAnimation
             message="Connexion à la salle"
             subMessage="Récupération des informations de la salle"
@@ -74,16 +74,16 @@ function WaitingRoom() {
               {roomData.players.map((player, index) => (
                 <li key={index} className="flex items-center mb-2">
                   <img
-                    src={player.avatar}
+                    src={player.avatar.urlavatar}
                     alt={`Avatar de ${player.pseudo}`}
-                    className="object-cover mr-3 w-8 h-8 rounded-full border-2 border-thirdary"
+                    className="object-cover w-8 h-8 mr-3 border-2 rounded-full border-thirdary"
                   />
                   <span className="text-secondary">{player.pseudo}</span>
                   <input
                     type="checkbox"
                     checked={player.isReady}
                     readOnly
-                    className="ml-2 w-4 h-4 accent-thirdary"
+                    className="w-4 h-4 ml-2 accent-thirdary"
                   />
                 </li>
               ))}
@@ -106,15 +106,15 @@ function WaitingRoom() {
           </div>
 
           {roomData.quizz && (
-            <div className="flex justify-center items-center w-1/2">
-              <div className="px-10 py-8 w-full max-w-xl text-center rounded-2xl bg-secondary">
+            <div className="flex items-center justify-center w-1/2">
+              <div className="w-full max-w-xl px-10 py-8 text-center rounded-2xl bg-secondary">
                 <h2 className="mb-2 text-2xl font-bold text-primary">{roomData.quizz.label}</h2>
                 <p className="mb-6 text-primary">{roomData.quizz.description}</p>
-                <div className="flex gap-4 justify-center">
+                <div className="flex justify-center gap-4">
                   {roomData.quizz?.themes && roomData.quizz.themes.map((theme, idx) => (
                     <span
                       key={idx}
-                      className="px-4 py-1 text-sm font-semibold bg-sky-400 rounded-full"
+                      className="px-4 py-1 text-sm font-semibold rounded-full bg-sky-400"
                     >
                       {theme.label}
                     </span>
