@@ -30,16 +30,23 @@ function WaitingRoom() {
   // Trouver la salle actuelle dans la liste des salles
   const roomInfo = rooms.find(room => room.id.toString() === roomId);
   
-  // Effet pour surveiller les changements dans les données de la salle
-  useEffect(() => {
-    if (roomInfo) {
-      console.log('Données de la salle mises à jour:', roomInfo);
-    }
-  }, [roomInfo]);
-
-  // Trouver la salle actuelle dans la liste des salles
-  const roomInfo = rooms.find(room => room.id.toString() === roomId);
+  // Récupérer l'id du joueur courant depuis localStorage (défini à la connexion WebSocket)
+  const userId = localStorage.getItem('userId');
   
+  // Utiliser uniquement les joueurs du serveur pour l'affichage
+  const players = currentRoom?.players || [];
+  
+  // Trouver le joueur courant par id
+  const currentPlayer = players.find(player => player.id === userId);
+  const serverIsReady = currentPlayer?.isReady || false;
+  
+  // État local pour la mise à jour optimiste de l'interface
+  const [localIsReady, setLocalIsReady] = useState(false);
+  
+  // Utiliser l'état local si disponible, sinon l'état du serveur
+  const isReady = localIsReady || serverIsReady;
+  
+  // Effet pour surveiller les changements dans les données de la salle
   useEffect(() => {
     if (roomInfo) {
       console.log('Données de la salle mises à jour:', roomInfo);
@@ -57,19 +64,13 @@ function WaitingRoom() {
     }
   }, [roomLoading]);
 
-  // Récupérer l'id du joueur courant depuis localStorage (défini à la connexion WebSocket)
-  const userId = localStorage.getItem('userId');
-  // Utiliser uniquement les joueurs du serveur pour l'affichage
-  const players = currentRoom?.players || [];
-  // Trouver le joueur courant par id
-  const currentPlayer = players.find(player => player.id === userId);
-  const serverIsReady = currentPlayer?.isReady || false;
-  
-  // État local pour la mise à jour optimiste de l'interface
-  const [localIsReady, setLocalIsReady] = useState(false);
-  
-  // Utiliser l'état local si disponible, sinon l'état du serveur
-  const isReady = localIsReady || serverIsReady;
+  const getReady = () => {
+    // Basculement du statut local (prêt ↔ pas prêt)
+    setLocalIsReady(!localIsReady);
+    // Envoyer la commande au serveur
+    setPlayerReady();
+  };
+
   const actualTotalPlayers = players.length;
   const maxPlayers = roomInfo?.j_max || 10;
   const missingPlayers = Math.max(0, maxPlayers - actualTotalPlayers);
@@ -83,19 +84,6 @@ function WaitingRoom() {
     }
     return "Récupération des informations de la salle";
   };
-
-  const getReady = () => {
-    // Basculement du statut local (prêt ↔ pas prêt)
-    setLocalIsReady(!localIsReady);
-    // Envoyer la commande au serveur
-    setPlayerReady();
-  };
-
-  // Debug: afficher les données des joueurs (optionnel)
-  // console.log('Current room players:', players);
-  // console.log('Current player:', currentPlayer);
-  // console.log('Is ready:', isReady);
-  // console.log('userId:', userId);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -113,12 +101,12 @@ function WaitingRoom() {
             <p className="mb-2 text-sm text-secondary">
               Si le chargement persiste, vérifiez la connexion WebSocket
             </p>
-                          <Button
-                variant="secondary"
-                onClick={() => window.location.reload()}
-              >
-                Recharger la page
-              </Button>
+            <Button
+              variant="secondary"
+              onClick={() => window.location.reload()}
+            >
+              Recharger la page
+            </Button>
           </div>
         </div>
       ) : (
