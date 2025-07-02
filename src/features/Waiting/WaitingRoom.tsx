@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "../../components/ui/Header";
 import Button from "../../components/ui/Button";
@@ -6,6 +6,7 @@ import LoadingAnimation from "../../components/ui/LoadingAnimation";
 import { useWebSocketStore } from "../../hooks/useWebSocketStore";
 
 interface Player {
+  id: string;
   pseudo: string;
   avatar: string;
   isReady: boolean;
@@ -28,72 +29,29 @@ function WaitingRoom() {
   // Trouver la salle actuelle dans la liste des salles
   const roomInfo = rooms.find(room => room.id.toString() === roomId);
   
-  // Effet pour surveiller les changements dans les données de la salle
   useEffect(() => {
     if (roomInfo) {
       console.log('Données de la salle mises à jour:', roomInfo);
     }
   }, [roomInfo]);
 
-  const getReady = () => {
-    // Ne plus utiliser l'état local, juste envoyer la commande au serveur
-    setPlayerReady();
-  };
-
-  // Trouver le joueur actuel dans la liste des joueurs du serveur
-  // Pour l'instant, on utilise le premier joueur comme joueur actuel
-  // TODO: Utiliser l'ID de l'utilisateur connecté pour identifier le bon joueur
-  const currentPlayer = currentRoom?.players?.[0]; // Premier joueur pour l'instant
+  // Récupérer l'id du joueur courant depuis localStorage (défini à la connexion WebSocket)
+  const userId = localStorage.getItem('userId');
+  // Utiliser uniquement les joueurs du serveur pour l'affichage
+  const players = currentRoom?.players || [];
+  // Trouver le joueur courant par id
+  const currentPlayer = players.find(player => player.id === userId);
+  const serverIsReady = currentPlayer?.isReady || false;
   
-  // Utiliser l'état du serveur pour le statut prêt
-  const isReady = currentPlayer?.isReady || false;
-
-  // Utiliser les données de currentRoom si disponibles, sinon roomInfo
-  // const totalPlayers = currentRoom?.players?.length || roomInfo?.j_actuelle || 1;
+  // État local pour la mise à jour optimiste de l'interface
+  const [localIsReady, setLocalIsReady] = useState(false);
   
-  // Créer une liste de joueurs par défaut basée sur roomInfo
-  const defaultPlayers: Player[] = [];
-  
-  // Si on est dans une salle, on ajoute au moins le joueur actuel
-  if (roomInfo) {
-    // Ajouter le joueur actuel
-    defaultPlayers.push({
-      pseudo: 'Vous',
-      avatar: '/default-avatar.png',
-      isReady: isReady
-    });
-    
-    // Ajouter d'autres joueurs si il y en a dans la salle
-    if (roomInfo.j_actuelle > 1) {
-      for (let i = 1; i < roomInfo.j_actuelle; i++) {
-        defaultPlayers.push({
-          pseudo: `Joueur ${i + 1}`,
-          avatar: '/default-avatar.png',
-          isReady: false
-        });
-      }
-    }
-  }
-  
-  // Utiliser les joueurs de currentRoom s'ils existent, sinon les joueurs par défaut
-  const players = currentRoom?.players || defaultPlayers;
-  
-  // Mettre à jour le nombre total de joueurs en fonction des données reçues
-  const actualTotalPlayers = currentRoom?.players?.length || roomInfo?.j_actuelle || 1;
-  
-  // Debug: afficher les données des joueurs
-  console.log('Current room players:', currentRoom?.players);
-  console.log('Current room full:', currentRoom);
-  console.log('Room info:', roomInfo);
-  console.log('Room info j_actuelle:', roomInfo?.j_actuelle);
-  console.log('Room info j_max:', roomInfo?.j_max);
-  console.log('Default players:', defaultPlayers);
-  console.log('Final players:', players);
-  console.log('Total players:', actualTotalPlayers);
+  // Utiliser l'état local si disponible, sinon l'état du serveur
+  const isReady = localIsReady || serverIsReady;
+  const actualTotalPlayers = players.length;
   const maxPlayers = roomInfo?.j_max || 10;
   const missingPlayers = Math.max(0, maxPlayers - actualTotalPlayers);
 
-  // Déterminer le message de chargement en fonction de l'état de connexion
   const getLoadingMessage = () => {
     if (!isConnected) {
       return "Connexion au serveur...";
@@ -103,6 +61,21 @@ function WaitingRoom() {
     }
     return "Récupération des informations de la salle";
   };
+
+  const getReady = () => {
+    // Basculement du statut local (prêt ↔ pas prêt)
+    setLocalIsReady(!localIsReady);
+    // Envoyer la commande au serveur
+    setPlayerReady();
+  };
+
+  // Debug: afficher les données des joueurs
+  console.log('Current room players:', players);
+  console.log('Current player:', currentPlayer);
+  console.log('Is ready:', isReady);
+  console.log('userId:', userId);
+  console.log('Player IDs in room:', players.map(p => p.id));
+  console.log('Looking for userId:', userId);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -131,7 +104,6 @@ function WaitingRoom() {
                     </span>
                   </h3>
                   <div className="items-center mb-1">
-                    
                     {roomInfo?.label && (
                       <span className="text-sm text-primary">
                         {roomInfo.label}
@@ -161,24 +133,33 @@ function WaitingRoom() {
             </div>
 
             <h2 className="mb-4 text-xl font-semibold">En attente de joueurs :</h2>
-            {players && players.length > 0 ? (
+            {players.length > 0 ? (
               <ul>
-                {players.map((player: Player, index: number) => (
-                  <li key={index} className="flex items-center mb-2">
-                    <img
-                      src={player.avatar}
-                      alt={`Avatar de ${player.pseudo}`}
-                      className="object-cover mr-3 w-8 h-8 rounded-full border-2 border-thirdary"
-                    />
-                    <span className="text-secondary">{player.pseudo}</span>
-                    <input
-                      type="checkbox"
-                      checked={player.isReady}
-                      readOnly
-                      className="ml-2 w-4 h-4 accent-thirdary"
-                    />
-                  </li>
-                ))}
+                {players.map((player: Player, index: number) => {
+                  // Pour le joueur courant, utiliser l'état local optimiste
+                  const playerIsReady = player.id === userId 
+                    ? (localIsReady || player.isReady)
+                    : player.isReady;
+                  
+                  return (
+                    <li key={index} className="flex items-center mb-2">
+                      <img
+                        src={player.avatar}
+                        alt={`Avatar de ${player.pseudo}`}
+                        className="object-cover mr-3 w-8 h-8 rounded-full border-2 border-thirdary"
+                      />
+                      <span className={`text-secondary ${player.id === userId ? 'font-bold' : ''}`}>
+                        {player.id === userId ? `${player.pseudo} (Vous)` : player.pseudo}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={playerIsReady}
+                        readOnly
+                        className="ml-2 w-4 h-4 accent-thirdary"
+                      />
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="text-sm italic text-secondary">
@@ -192,15 +173,13 @@ function WaitingRoom() {
 
             <div className="mt-4 space-y-2">
               <Button
-                variant="primary"
+                variant={isReady ? "secondary" : "primary"}
                 textSize="lg"
                 width="6xl"
                 onClick={getReady}
               >
                 {isReady ? "Prêt ✅" : "Prêt"}
               </Button>
-              
-              {/* Bouton de debug pour forcer la demande des données */}
               <Button
                 variant="secondary"
                 textSize="sm"

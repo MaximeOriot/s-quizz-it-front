@@ -43,6 +43,41 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
     const dataObj = data as Record<string, unknown>;
     console.log('🔍 Clés de data:', Object.keys(dataObj));
 
+    // Stocker le userId seulement du message de bienvenue initial
+    // Ne pas écraser le userId avec les échos de nos propres commandes
+    if ('user' in dataObj && typeof dataObj.user === 'string' && dataObj.user !== 'server' && !dataObj.user.startsWith('salon-')) {
+      const userId = dataObj.user;
+      // Vérifier si c'est un message de commande (nos propres échos)
+      if ('message' in dataObj && typeof dataObj.message === 'string') {
+        const message = dataObj.message;
+        // Vérifier si c'est une commande dynamique (fetch, get_salon_info-X, get_players-X, ready-X)
+        const isCommand = message === 'fetch' || 
+                         message.startsWith('get_salon_info-') || 
+                         message.startsWith('get_players-') || 
+                         message.startsWith('ready-');
+        
+        if (!isCommand) {
+          console.log('🔑 userId reçu du serveur (non-commande):', userId);
+          localStorage.setItem('userId', userId);
+          console.log('🔑 userId stocké dans localStorage:', userId);
+        }
+      }
+    }
+    
+    // Extraire le userId du message de bienvenue du serveur
+    if ('user' in dataObj && dataObj.user === 'server' && 'message' in dataObj && typeof dataObj.message === 'string') {
+      const message = dataObj.message;
+      if (message.includes('userId:')) {
+        const userIdMatch = message.match(/userId:\s*([a-f0-9-]+)/);
+        if (userIdMatch) {
+          const userId = userIdMatch[1];
+          console.log('🔑 userId extrait du message de bienvenue:', userId);
+          localStorage.setItem('userId', userId);
+          console.log('🔑 userId stocké dans localStorage:', userId);
+        }
+      }
+    }
+
     // Traitement des messages avec format user/message
     if ('user' in dataObj && 'message' in dataObj) {
       const userMessage = dataObj as { user: string; message: string };
