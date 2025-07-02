@@ -5,6 +5,7 @@ import {
   setConnected,
   setRooms,
   setRoomsLoading,
+  setCurrentRoom,
   updateRoomPlayers,
   updatePlayerReady,
   updateRoomInfo,
@@ -49,24 +50,101 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
       const userMessage = data as { user: string; message: string };
       console.log('Message utilisateur reçu:', userMessage);
       
-      // Traitement simplifié pour diagnostiquer
-      try {
-        // Essayer de parser le message JSON
-        let parsedMessage: unknown = null;
-        
-        if (typeof userMessage.message === 'string') {
-          // Essayer de parser directement
-          try {
-            parsedMessage = JSON.parse(userMessage.message);
-            console.log('✅ Message parsé:', parsedMessage);
-          } catch {
-            // Si ça échoue, utiliser le message tel quel
-            parsedMessage = userMessage.message;
-            console.log('✅ Message utilisé tel quel:', parsedMessage);
+              // Traitement simplifié pour diagnostiquer
+        try {
+          // Vérifier si c'est un message de broadcast avec type direct
+          const messageObj = userMessage as Record<string, unknown>;
+          if (messageObj.type === 'room_players_update' && 'players' in messageObj) {
+            console.log('Joueurs de la salle reçus (broadcast):', messageObj.players);
+            
+            // Convertir le format du serveur en format attendu par le frontend
+            const playersArray = Object.values(messageObj.players as Record<string, unknown>).map((player: unknown) => {
+              const playerData = player as { userId: string; profile: { pseudo: string; avatar?: string }; isReady?: boolean };
+              return {
+                id: playerData.userId,
+                pseudo: playerData.profile.pseudo,
+                avatar: playerData.profile.avatar || '/default-avatar.png',
+                isReady: playerData.isReady || false
+              };
+            });
+            
+            console.log('Joueurs convertis (broadcast):', playersArray);
+            dispatch(updateRoomPlayers(playersArray));
+            return;
           }
-        } else {
-          parsedMessage = userMessage.message;
-        }
+          
+          // Traiter les messages salon_info avec format user/message
+          if (messageObj.type === 'salon_info' && 'salon' in messageObj) {
+            console.log('Informations de salon reçues (user/message):', messageObj.salon);
+            const salonData = messageObj.salon as Record<string, unknown>;
+            console.log('Données du salon:', salonData);
+            
+            // Mettre à jour les informations de la salle dans le state global
+            // Cela permettra de mettre à jour j_actuelle dans roomInfo
+            dispatch(setRoomsLoading(true));
+            sendWebSocketMessage('get_salons');
+            
+            // Forcer la demande des joueurs après avoir mis à jour les infos de la salle
+            setTimeout(() => {
+              if (roomId) {
+                console.log('Demande des joueurs après mise à jour salon_info');
+                sendWebSocketMessage(`get_players-${roomId}`);
+              }
+            }, 500);
+            
+            dispatch(setRoomLoading(false));
+            return;
+          }
+          
+          // Traiter les messages room_players avec format user/message
+          if (messageObj.type === 'room_players' && 'players' in messageObj) {
+            console.log('Joueurs de la salle reçus (user/message):', messageObj.players);
+            
+            // Convertir le format du serveur en format attendu par le frontend
+            const playersArray = Object.values(messageObj.players as Record<string, unknown>).map((player: unknown) => {
+              const playerData = player as { userId: string; profile: { pseudo: string; avatar?: string }; isReady?: boolean };
+              return {
+                id: playerData.userId,
+                pseudo: playerData.profile.pseudo,
+                avatar: playerData.profile.avatar || '/default-avatar.png',
+                isReady: playerData.isReady || false
+              };
+            });
+            
+            console.log('Joueurs convertis (user/message):', playersArray);
+            
+            // Si currentRoom n'existe pas encore, l'initialiser
+            if (!currentRoom) {
+              console.log('Initialisation de currentRoom avec les joueurs (user/message)');
+              dispatch(setCurrentRoom({
+                players: playersArray,
+                quizz: {} as Quizz,
+                isQuickPlay: false,
+                roomId: roomId || ''
+              }));
+            } else {
+              dispatch(updateRoomPlayers(playersArray));
+            }
+            
+            return;
+          }
+          
+          // Essayer de parser le message JSON
+          let parsedMessage: unknown = null;
+          
+          if (typeof userMessage.message === 'string') {
+            // Essayer de parser directement
+            try {
+              parsedMessage = JSON.parse(userMessage.message);
+              console.log('✅ Message parsé:', parsedMessage);
+            } catch {
+              // Si ça échoue, utiliser le message tel quel
+              parsedMessage = userMessage.message;
+              console.log('✅ Message utilisé tel quel:', parsedMessage);
+            }
+          } else {
+            parsedMessage = userMessage.message;
+          }
         
         // Traiter le message parsé
         if (parsedMessage && typeof parsedMessage === 'object' && 'type' in parsedMessage) {
@@ -77,6 +155,21 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
               if ('salons' in messageData) {
                 console.log('Données des salons reçues:', messageData.salons);
                 dispatch(setRooms(messageData.salons as Room[]));
+              }
+              break;
+              
+            case 'salon_info':
+              if ('salon' in messageData) {
+                console.log('Informations de salon reçues (parsed):', messageData.salon);
+                const salonData = messageData.salon as Record<string, unknown>;
+                
+                // Mettre à jour les informations de la salle dans le state global
+                if (salonData.j_actuelle !== undefined) {
+                  console.log('Mise à jour j_actuelle (parsed):', salonData.j_actuelle);
+                  // Forcer la mise à jour de la liste des salles pour refléter les changements
+                  dispatch(setRoomsLoading(true));
+                  sendWebSocketMessage('get_salons');
+                }
               }
               break;
               
@@ -102,9 +195,38 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
               break;
               
             case 'room_players':
+            case 'room_players_update':
               if ('players' in messageData) {
                 console.log('Joueurs de la salle reçus:', messageData.players);
-                dispatch(updateRoomPlayers(messageData.players as WaitingPlayer[]));
+                
+                // Convertir le format du serveur en format attendu par le frontend
+                const playersArray = Object.values(messageData.players as Record<string, unknown>).map((player: unknown) => {
+                  const playerData = player as { userId: string; profile: { pseudo: string; avatar?: string }; isReady?: boolean };
+                  return {
+                    id: playerData.userId,
+                    pseudo: playerData.profile.pseudo,
+                    avatar: playerData.profile.avatar || '/default-avatar.png',
+                    isReady: playerData.isReady || false
+                  };
+                });
+                
+                console.log('Joueurs convertis:', playersArray);
+                console.log('Dispatch updateRoomPlayers avec:', playersArray);
+                
+                // Si currentRoom n'existe pas encore, l'initialiser
+                if (!currentRoom) {
+                  console.log('Initialisation de currentRoom avec les joueurs');
+                  dispatch(setCurrentRoom({
+                    players: playersArray,
+                    quizz: {} as Quizz,
+                    isQuickPlay: false,
+                    roomId: roomId || ''
+                  }));
+                } else {
+                  dispatch(updateRoomPlayers(playersArray));
+                }
+                
+                console.log('Dispatch terminé');
               }
               break;
               
@@ -205,6 +327,20 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
               console.log('Données de joueurs détectées:', dataObj.players);
               dispatch(updateRoomPlayers(dataObj.players as WaitingPlayer[]));
             }
+            
+            // Détecter les données de salon
+            if ('salon' in dataObj && typeof dataObj.salon === 'object') {
+              console.log('Données de salon détectées:', dataObj.salon);
+              const salonData = dataObj.salon as Record<string, unknown>;
+              
+              // Mettre à jour les informations de la salle dans le state global
+              if (salonData.j_actuelle !== undefined) {
+                console.log('Mise à jour j_actuelle:', salonData.j_actuelle);
+                // Forcer la mise à jour de la liste des salles pour refléter les changements
+                dispatch(setRoomsLoading(true));
+                sendWebSocketMessage('get_salons');
+              }
+            }
           }
         }
       } catch (error) {
@@ -222,6 +358,29 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
           if ('salons' in messageData) {
             console.log('Données des salons reçues:', messageData.salons);
             dispatch(setRooms(messageData.salons as Room[]));
+          }
+          break;
+          
+        case 'salon_info':
+          if ('salon' in messageData) {
+            console.log('Informations de salon reçues (format direct):', messageData.salon);
+            const salonData = messageData.salon as Record<string, unknown>;
+            console.log('Données du salon:', salonData);
+            
+            // Mettre à jour les informations de la salle dans le state global
+            // Cela permettra de mettre à jour j_actuelle dans roomInfo
+            dispatch(setRoomsLoading(true));
+            sendWebSocketMessage('get_salons');
+            
+            // Forcer la demande des joueurs après avoir mis à jour les infos de la salle
+            setTimeout(() => {
+              if (roomId) {
+                console.log('Demande des joueurs après mise à jour salon_info (format direct)');
+                sendWebSocketMessage(`get_players-${roomId}`);
+              }
+            }, 500);
+            
+            dispatch(setRoomLoading(false));
           }
           break;
           
@@ -249,7 +408,32 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
         case 'room_players':
           if ('players' in messageData) {
             console.log('Joueurs de la salle reçus:', messageData.players);
-            dispatch(updateRoomPlayers(messageData.players as WaitingPlayer[]));
+            
+            // Convertir le format du serveur en format attendu par le frontend
+            const playersArray = Object.values(messageData.players as Record<string, unknown>).map((player: unknown) => {
+              const playerData = player as { userId: string; profile: { pseudo: string; avatar?: string }; isReady?: boolean };
+              return {
+                id: playerData.userId,
+                pseudo: playerData.profile.pseudo,
+                avatar: playerData.profile.avatar || '/default-avatar.png',
+                isReady: playerData.isReady || false
+              };
+            });
+            
+            console.log('Joueurs convertis (format direct):', playersArray);
+            
+            // Si currentRoom n'existe pas encore, l'initialiser
+            if (!currentRoom) {
+              console.log('Initialisation de currentRoom avec les joueurs (format direct)');
+              dispatch(setCurrentRoom({
+                players: playersArray,
+                quizz: {} as Quizz,
+                isQuickPlay: false,
+                roomId: roomId || ''
+              }));
+            } else {
+              dispatch(updateRoomPlayers(playersArray));
+            }
           }
           break;
           

@@ -11,10 +11,6 @@ interface Player {
   isReady: boolean;
 }
 
-interface Theme {
-  label: string;
-}
-
 function WaitingRoom() {
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('roomId');
@@ -45,8 +41,8 @@ function WaitingRoom() {
     setPlayerReady(!isReady);
   };
 
-  // Utiliser les données de roomInfo pour les joueurs de base
-  const totalPlayers = roomInfo?.j_actuelle || 1; // Au moins 1 joueur (vous)
+  // Utiliser les données de currentRoom si disponibles, sinon roomInfo
+  // const totalPlayers = currentRoom?.players?.length || roomInfo?.j_actuelle || 1;
   
   // Créer une liste de joueurs par défaut basée sur roomInfo
   const defaultPlayers: Player[] = [];
@@ -75,6 +71,9 @@ function WaitingRoom() {
   // Utiliser les joueurs de currentRoom s'ils existent, sinon les joueurs par défaut
   const players = currentRoom?.players || defaultPlayers;
   
+  // Mettre à jour le nombre total de joueurs en fonction des données reçues
+  const actualTotalPlayers = currentRoom?.players?.length || roomInfo?.j_actuelle || 1;
+  
   // Debug: afficher les données des joueurs
   console.log('Current room players:', currentRoom?.players);
   console.log('Current room full:', currentRoom);
@@ -83,9 +82,9 @@ function WaitingRoom() {
   console.log('Room info j_max:', roomInfo?.j_max);
   console.log('Default players:', defaultPlayers);
   console.log('Final players:', players);
-  console.log('Total players:', totalPlayers);
+  console.log('Total players:', actualTotalPlayers);
   const maxPlayers = roomInfo?.j_max || 10;
-  const missingPlayers = Math.max(0, maxPlayers - totalPlayers);
+  const missingPlayers = Math.max(0, maxPlayers - actualTotalPlayers);
 
   // Déterminer le message de chargement en fonction de l'état de connexion
   const getLoadingMessage = () => {
@@ -140,7 +139,7 @@ function WaitingRoom() {
 
               <div className="flex justify-between items-center mb-4">
                 <div className="text-sm text-primary">
-                  <span className="font-semibold">{totalPlayers}</span>
+                  <span className="font-semibold">{actualTotalPlayers}</span>
                   <span className="mx-1">/</span>
                   <span>{maxPlayers} joueurs</span>
                 </div>
@@ -149,7 +148,7 @@ function WaitingRoom() {
               <div className="mb-4 w-full h-2 bg-gray-200 rounded-full">
                 <div
                   className="h-2 bg-blue-500 rounded-full"
-                  style={{ width: `${(totalPlayers / maxPlayers) * 100}%` }}
+                  style={{ width: `${(actualTotalPlayers / maxPlayers) * 100}%` }}
                 />
               </div>
             </div>
@@ -208,25 +207,6 @@ function WaitingRoom() {
               </Button>
             </div>
           </div>
-
-          {currentRoom?.quizz && (
-            <div className="flex justify-center items-center w-1/2">
-              <div className="px-10 py-8 w-full max-w-xl text-center rounded-2xl bg-secondary">
-                <h2 className="mb-2 text-2xl font-bold text-primary">{currentRoom.quizz.label}</h2>
-                <p className="mb-6 text-primary">{currentRoom.quizz.description}</p>
-                <div className="flex gap-4 justify-center">
-                  {currentRoom.quizz?.themes && currentRoom.quizz.themes.map((theme: Theme, idx: number) => (
-                    <span
-                      key={idx}
-                      className="px-4 py-1 text-sm font-semibold bg-sky-400 rounded-full"
-                    >
-                      {theme.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
