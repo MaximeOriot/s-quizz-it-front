@@ -169,18 +169,26 @@ class GlobalWebSocket {
   }
 
   sendMessage(message: unknown) {
+    console.log(`📤 Tentative d'envoi de message (ID: ${this.connectionId}):`, message);
+    console.log(`📤 État du socket:`, this.socket?.readyState);
+    console.log(`📤 Socket ouvert?`, this.socket?.readyState === WebSocket.OPEN);
+    
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      console.log(`Envoi du message WebSocket (ID: ${this.connectionId}):`, message);
+      console.log(`📤 Envoi du message WebSocket (ID: ${this.connectionId}):`, message);
       
       // Si c'est déjà une chaîne, l'envoyer directement pour éviter le double JSON.stringify
       if (typeof message === 'string') {
+        console.log(`📤 Envoi de la chaîne:`, message);
         this.socket.send(message);
       } else {
         // Sinon, utiliser JSON.stringify pour les objets
-        this.socket.send(JSON.stringify(message));
+        const jsonMessage = JSON.stringify(message);
+        console.log(`📤 Envoi de l'objet JSON:`, jsonMessage);
+        this.socket.send(jsonMessage);
       }
     } else {
-      console.warn(`WebSocket n'est pas ouvert, message non envoyé (ID: ${this.connectionId}):`, message);
+      console.warn(`❌ WebSocket n'est pas ouvert, message non envoyé (ID: ${this.connectionId}):`, message);
+      console.warn(`❌ État du socket:`, this.socket?.readyState);
     }
   }
 

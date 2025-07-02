@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "../../components/ui/Header";
 import Button from "../../components/ui/Button";
@@ -14,7 +14,6 @@ interface Player {
 function WaitingRoom() {
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('roomId');
-  const [isReady, setIsReady] = useState(false);
 
   const { 
     isConnected, 
@@ -37,9 +36,17 @@ function WaitingRoom() {
   }, [roomInfo]);
 
   const getReady = () => {
-    setIsReady(!isReady);
+    // Ne plus utiliser l'état local, juste envoyer la commande au serveur
     setPlayerReady();
   };
+
+  // Trouver le joueur actuel dans la liste des joueurs du serveur
+  // Pour l'instant, on utilise le premier joueur comme joueur actuel
+  // TODO: Utiliser l'ID de l'utilisateur connecté pour identifier le bon joueur
+  const currentPlayer = currentRoom?.players?.[0]; // Premier joueur pour l'instant
+  
+  // Utiliser l'état du serveur pour le statut prêt
+  const isReady = currentPlayer?.isReady || false;
 
   // Utiliser les données de currentRoom si disponibles, sinon roomInfo
   // const totalPlayers = currentRoom?.players?.length || roomInfo?.j_actuelle || 1;

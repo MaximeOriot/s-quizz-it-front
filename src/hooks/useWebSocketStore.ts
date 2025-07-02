@@ -31,16 +31,17 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
 
   // Gestionnaire principal des messages WebSocket
   const handleMessage = useCallback((data: unknown) => {
-    console.log('Message WebSocket reçu:', data);
+    console.log('🔍 Message WebSocket reçu:', data);
+    console.log('🔍 Type de data:', typeof data);
+    console.log('🔍 Est-ce un objet?', typeof data === 'object');
     
     if (!data || typeof data !== 'object') {
+      console.log('❌ Data invalide, ignoré');
       return;
     }
 
     const dataObj = data as Record<string, unknown>;
-    console.log('Type de data:', typeof data);
-    console.log('Est-ce un objet?', typeof data === 'object');
-    console.log('Clés de data:', Object.keys(dataObj));
+    console.log('🔍 Clés de data:', Object.keys(dataObj));
 
     // Traitement des messages avec format user/message
     if ('user' in dataObj && 'message' in dataObj) {
@@ -48,7 +49,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
       console.log('Message utilisateur reçu:', userMessage);
       
       let parsedMessage: unknown;
-      try {
+        try {
         parsedMessage = JSON.parse(userMessage.message);
         console.log('Message parsé:', parsedMessage);
       } catch {
@@ -78,9 +79,9 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
         } catch (error) {
           console.error('Erreur lors du parsing des données de création:', error);
         }
-        return;
-      }
-
+            return;
+          }
+          
              // Traitement des messages de statut prêt
        if (typeof parsedMessage === 'string' && parsedMessage.startsWith('player_ready-')) {
          console.log('Message de statut prêt reçu:', parsedMessage);
@@ -102,14 +103,14 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
           (parsedMessage.includes('quitté le salon') || parsedMessage.includes('a quitté') || parsedMessage.includes('disconnected'))) {
         console.log('Message de déconnexion/départ détecté:', parsedMessage);
         
-        setTimeout(() => {
-          if (roomId) {
-            sendWebSocketMessage(`get_players-${roomId}`);
-          }
+            setTimeout(() => {
+              if (roomId) {
+                sendWebSocketMessage(`get_players-${roomId}`);
+              }
         }, 100);
-        return;
-      }
-
+            return;
+          }
+          
       // Traitement des messages d'erreur
       if (typeof parsedMessage === 'string' && parsedMessage.includes('Salon introuvable')) {
         console.log('Erreur: salon introuvable');
@@ -121,97 +122,124 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
       if (typeof parsedMessage === 'string' && parsedMessage.includes('Vous êtes déjà dans ce salon')) {
         console.log('Erreur: déjà dans la salle');
         dispatch(setRoomLoading(false));
-        return;
-      }
-
+            return;
+          }
+          
       // Traitement des messages de connexion réussie
       if (typeof parsedMessage === 'string' && parsedMessage.includes('rejoint le salon')) {
-        console.log('Message de connexion réussie:', parsedMessage);
+        console.log('🎉 Message de connexion réussie:', parsedMessage);
+        console.log('🎉 Données complètes reçues:', dataObj);
         
         // Traitement des données de joueurs si présentes
         if (dataObj.players) {
-          console.log('Données de joueurs reçues lors de la connexion:', dataObj.players);
+          console.log('🎉 Données de joueurs reçues lors de la connexion:', dataObj.players);
           
           const playersArray = Object.values(dataObj.players as Record<string, unknown>).map((player: unknown) => {
-            const playerData = player as { userId: string; profile: { pseudo: string; avatar?: string }; isReady?: boolean };
-            return {
-              id: playerData.userId,
-              pseudo: playerData.profile.pseudo,
-              avatar: playerData.profile.avatar || '/default-avatar.png',
-              isReady: playerData.isReady || false
-            };
-          });
-          
-          console.log('Joueurs convertis lors de la connexion:', playersArray);
-          
-          if (!currentRoom) {
-            console.log('Initialisation de currentRoom avec les joueurs lors de la connexion');
-            dispatch(setCurrentRoom({
-              players: playersArray,
-              quizz: {} as Quizz,
-              isQuickPlay: false,
-              roomId: roomId || ''
-            }));
-          } else {
-            console.log('Mise à jour des joueurs dans currentRoom lors de la connexion');
-            dispatch(updateRoomPlayers(playersArray));
-          }
+                  const playerData = player as { userId: string; profile: { pseudo: string; avatar?: string | { idAvatar: number; urlavatar: string } }; isReady?: boolean };
+                  
+                  // Traiter l'avatar pour s'assurer qu'il est toujours une URL
+                  let avatarUrl = '/default-avatar.png';
+                  if (playerData.profile.avatar) {
+                    if (typeof playerData.profile.avatar === 'string') {
+                      avatarUrl = playerData.profile.avatar;
+                    } else if (typeof playerData.profile.avatar === 'object' && 'urlavatar' in playerData.profile.avatar) {
+                      avatarUrl = playerData.profile.avatar.urlavatar;
+                    }
+                  }
+                  
+                  return {
+                    id: playerData.userId,
+                    pseudo: playerData.profile.pseudo,
+                    avatar: avatarUrl,
+                    isReady: playerData.isReady || false
+                  };
+                });
+                
+          console.log('🎉 Joueurs convertis lors de la connexion:', playersArray);
+                
+                if (!currentRoom) {
+            console.log('🎉 Initialisation de currentRoom avec les joueurs lors de la connexion');
+                  dispatch(setCurrentRoom({
+                    players: playersArray,
+                    quizz: {} as Quizz,
+                    isQuickPlay: false,
+                    roomId: roomId || ''
+                  }));
+                } else {
+            console.log('🎉 Mise à jour des joueurs dans currentRoom lors de la connexion');
+                  dispatch(updateRoomPlayers(playersArray));
+                }
+        } else {
+          console.log('❌ Pas de données de joueurs dans le message de connexion');
         }
         
-        dispatch(setRoomLoading(false));
-        
-        setTimeout(() => {
-          if (roomId) {
-            sendWebSocketMessage(`get_salon_info-${roomId}`);
-            sendWebSocketMessage(`get_players-${roomId}`);
+            console.log('🎉 Mise à jour roomLoading à false');
+            dispatch(setRoomLoading(false));
+            
+            setTimeout(() => {
+              if (roomId) {
+                console.log('🎉 Demande des informations de la salle après connexion...');
+                sendWebSocketMessage(`get_salon_info-${roomId}`);
+                sendWebSocketMessage(`get_players-${roomId}`);
+              }
+            }, 500);
+            return;
           }
-        }, 500);
-        return;
-      }
-
+          
       // Traitement des données de quiz et joueurs
-      if (parsedMessage && typeof parsedMessage === 'object') {
+          if (parsedMessage && typeof parsedMessage === 'object') {
         const parsedObj = parsedMessage as Record<string, unknown>;
-        
+            
         if ('quizz' in parsedObj || 'quiz' in parsedObj) {
           console.log('Données de quiz détectées:', parsedObj);
           const quizz = parsedObj.quizz || parsedObj.quiz;
-          if (quizz && typeof quizz === 'object') {
-            dispatch(updateRoomInfo({
-              quizz: quizz as Quizz,
+              if (quizz && typeof quizz === 'object') {
+                dispatch(updateRoomInfo({
+                  quizz: quizz as Quizz,
               isQuickPlay: parsedObj.isQuickPlay as boolean || false
-            }));
-            dispatch(setRoomLoading(false));
-          }
-        }
-        
+                }));
+                dispatch(setRoomLoading(false));
+              }
+            }
+            
         if ('players' in parsedObj && Array.isArray(parsedObj.players)) {
           console.log('Données de joueurs détectées:', parsedObj.players);
           dispatch(updateRoomPlayers(parsedObj.players as WaitingPlayer[]));
-        }
-        
+            }
+            
                  if ('salon' in parsedObj && typeof parsedObj.salon === 'object') {
            console.log('Données de salon détectées:', parsedObj.salon);
            
            if ((parsedObj.salon as Record<string, unknown>).j_actuelle !== undefined) {
              console.log('Mise à jour j_actuelle:', (parsedObj.salon as Record<string, unknown>).j_actuelle);
-             dispatch(setRoomsLoading(true));
+                dispatch(setRoomsLoading(true));
              sendWebSocketMessage('fetch');
-           }
-         }
+          }
+        }
       }
       return;
     }
-
+    
     // Traitement des messages avec format type direct
     if (dataObj.type) {
       const messageData = dataObj as { type: string; [key: string]: unknown };
+      console.log('🔍 Message avec type détecté:', messageData.type);
       
       switch (messageData.type) {
         case 'salons_init':
+          console.log('🎯 SALONS_INIT reçu!');
           if ('salons' in messageData) {
-            console.log('Données des salons reçues:', messageData.salons);
+            console.log('🎯 Données des salons reçues:', messageData.salons);
+            console.log('🎯 Type des salons:', typeof messageData.salons);
+            console.log('🎯 Est-ce un array?', Array.isArray(messageData.salons));
+            if (Array.isArray(messageData.salons)) {
+              console.log('🎯 Nombre de salles:', messageData.salons.length);
+            }
+            console.log('🎯 Dispatch setRooms avec:', messageData.salons);
             dispatch(setRooms(messageData.salons as Room[]));
+            console.log('🎯 setRooms dispatché');
+          } else {
+            console.log('❌ Pas de clé "salons" dans le message salons_init');
           }
           break;
           
@@ -444,11 +472,60 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
           console.log('Message non géré:', messageData.type, messageData);
       }
     } else {
-      console.log('Message non structuré reçu:', data);
+      console.log('🔍 Message non structuré reçu:', data);
       
       // Traitement des données de quiz et joueurs dans n'importe quel format
       if (data && typeof data === 'object') {
         const dataObj = data as Record<string, unknown>;
+        
+        // Traitement spécial pour les données de joueurs reçues directement comme tableau
+        if (Array.isArray(data)) {
+          console.log('🎮 Données reçues comme tableau direct:', data);
+          
+          // Vérifier si c'est un tableau de joueurs
+          if (data.length > 0 && typeof data[0] === 'object' && 'id' in data[0] && 'pseudo' in data[0]) {
+            console.log('🎮 Tableau de joueurs détecté:', data);
+            
+            // Traiter les joueurs pour convertir les avatars
+            const processedPlayers = data.map((player: Record<string, unknown>) => {
+              let avatarUrl = '/default-avatar.png';
+              if (player.avatar) {
+                if (typeof player.avatar === 'string') {
+                  avatarUrl = player.avatar;
+                } else if (typeof player.avatar === 'object' && player.avatar && 'urlavatar' in (player.avatar as Record<string, unknown>)) {
+                  avatarUrl = (player.avatar as { urlavatar: string }).urlavatar;
+                }
+              }
+              
+              return {
+                id: player.id as string,
+                pseudo: player.pseudo as string,
+                avatar: avatarUrl,
+                isReady: (player.isReady as boolean) || false
+              };
+            });
+            
+            console.log('🎮 Joueurs traités:', processedPlayers);
+            
+            // Initialiser ou mettre à jour currentRoom
+            if (currentRoom) {
+              console.log('🎮 Mise à jour des joueurs dans currentRoom existant');
+              dispatch(updateRoomPlayers(processedPlayers));
+            } else {
+              console.log('🎮 Initialisation de currentRoom avec les joueurs');
+              dispatch(setCurrentRoom({
+                players: processedPlayers,
+                quizz: {} as Quizz,
+                isQuickPlay: false,
+                roomId: roomId || ''
+              }));
+            }
+            
+            // Arrêter le chargement
+            dispatch(setRoomLoading(false));
+            return;
+          }
+        }
         
         if ('quizz' in dataObj || 'quiz' in dataObj) {
           console.log('Données de quiz détectées:', dataObj);
@@ -544,19 +621,22 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
   // Effet pour rejoindre une salle
   useEffect(() => {
     if (roomId && isConnected) {
-      console.log(`Rejoindre la salle ${roomId}...`);
+      console.log(`🚪 Rejoindre la salle ${roomId}...`);
+      console.log(`🚪 État de connexion:`, isConnected);
+      console.log(`🚪 CurrentRoom actuel:`, currentRoom);
       dispatch(setRoomLoading(true));
       
       // Ne pas réinitialiser la room si elle existe déjà avec des joueurs
       if (!currentRoom || !currentRoom.players || currentRoom.players.length === 0) {
-        console.log('Réinitialisation de la room car pas de joueurs...');
+        console.log('🚪 Réinitialisation de la room car pas de joueurs...');
         dispatch(resetRoom());
       } else {
-        console.log('Préservation de la room existante avec joueurs:', currentRoom.players.length);
+        console.log('🚪 Préservation de la room existante avec joueurs:', currentRoom.players.length);
       }
       
       // Petit délai pour s'assurer que la connexion est stable
       const timeout = setTimeout(() => {
+        console.log(`🚪 Envoi de connect-${roomId}...`);
         sendWebSocketMessage(`connect-${roomId}`);
       }, 500);
 
@@ -567,8 +647,12 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
   // Effet pour demander les salles globales quand connecté et pas dans une salle
   useEffect(() => {
     if (isConnected && !roomId && !hasReceivedData) {
-      console.log('Demande des salles globales...');
+      console.log('🚀 Demande des salles globales...');
+      console.log('🚀 État de connexion:', isConnected);
+      console.log('🚀 RoomId:', roomId);
+      console.log('🚀 HasReceivedData:', hasReceivedData);
       dispatch(setRoomsLoading(true));
+      console.log('🚀 Envoi du message "fetch"...');
       sendWebSocketMessage('fetch');
     }
   }, [isConnected, roomId, hasReceivedData, sendWebSocketMessage, dispatch]);
@@ -608,7 +692,8 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
   // Actions
   const createRoom = useCallback((roomData: { label: string; difficulte: number; j_max: number }) => {
     const message = `create:${JSON.stringify(roomData)}`;
-    console.log('Envoi du message de création:', message);
+    console.log('🏗️ Création de salle demandée:', roomData);
+    console.log('🏗️ Message de création:', message);
     sendWebSocketMessage(message);
   }, [sendWebSocketMessage]);
 
@@ -617,17 +702,20 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
   }, [sendWebSocketMessage]);
 
      const setPlayerReady = useCallback(() => {
-     if (roomId) {
+    if (roomId) {
        console.log('Envoi de la commande ready:', `ready-${roomId}`);
        sendWebSocketMessage(`ready-${roomId}`);
-     }
-   }, [roomId, sendWebSocketMessage]);
+    }
+  }, [roomId, sendWebSocketMessage]);
 
   const refreshRooms = useCallback(() => {
+    console.log('🔄 RefreshRooms appelé');
+    console.log('🔄 État de connexion:', isConnected);
     dispatch(setRoomsLoading(true));
+    console.log('🔄 Envoi du message "fetch" via refreshRooms...');
     sendWebSocketMessage('fetch');
     forceUpdate();
-  }, [sendWebSocketMessage, dispatch, forceUpdate]);
+  }, [sendWebSocketMessage, dispatch, forceUpdate, isConnected]);
 
   return {
     // État

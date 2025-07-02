@@ -86,9 +86,10 @@ function GlobalRoom() {
               ))}
             </div>
 
-            {rooms.length === 0 && (
+            {rooms.length === 0 && hasReceivedData && (
               <div className="mt-8 text-center text-foreground/60">
                 <p className="mb-4 text-lg">Aucune salle ouverte pour le moment</p>
+                <p className="mb-6 text-sm">Soyez le premier à créer une salle !</p>
                 <Button variant="primary" onClick={handleCreateFirstRoom}>
                   Créer la première salle
                 </Button>
