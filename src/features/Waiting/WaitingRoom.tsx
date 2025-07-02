@@ -38,7 +38,7 @@ function WaitingRoom() {
 
   const getReady = () => {
     setIsReady(!isReady);
-    setPlayerReady(!isReady);
+    setPlayerReady();
   };
 
   // Utiliser les données de currentRoom si disponibles, sinon roomInfo

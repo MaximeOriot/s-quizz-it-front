@@ -258,11 +258,27 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
             console.log('Joueurs de la salle reçus:', messageData.players);
             
             const playersArray = Object.values(messageData.players as Record<string, unknown>).map((player: unknown) => {
-              const playerData = player as { userId: string; profile: { pseudo: string; avatar?: string }; isReady?: boolean };
+              const playerData = player as { 
+                id: string; 
+                pseudo: string; 
+                avatar: string | { idAvatar: number; urlavatar: string }; 
+                isReady?: boolean 
+              };
+              
+              // Gérer les deux formats d'avatar possibles
+              let avatarUrl = '/default-avatar.png';
+              if (playerData.avatar) {
+                if (typeof playerData.avatar === 'string') {
+                  avatarUrl = playerData.avatar;
+                } else if (typeof playerData.avatar === 'object' && 'urlavatar' in playerData.avatar) {
+                  avatarUrl = playerData.avatar.urlavatar;
+                }
+              }
+              
               return {
-                id: playerData.userId,
-                pseudo: playerData.profile.pseudo,
-                avatar: playerData.profile.avatar || '/default-avatar.png',
+                id: playerData.id,
+                pseudo: playerData.pseudo,
+                avatar: avatarUrl,
                 isReady: playerData.isReady || false
               };
             });
@@ -325,11 +341,27 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
             console.log('Données de joueurs reçues lors de la connexion (type direct):', messageData.players);
             
             const playersArray = Object.values(messageData.players as Record<string, unknown>).map((player: unknown) => {
-              const playerData = player as { userId: string; profile: { pseudo: string; avatar?: string }; isReady?: boolean };
+              const playerData = player as { 
+                id: string; 
+                pseudo: string; 
+                avatar: string | { idAvatar: number; urlavatar: string }; 
+                isReady?: boolean 
+              };
+              
+              // Gérer les deux formats d'avatar possibles
+              let avatarUrl = '/default-avatar.png';
+              if (playerData.avatar) {
+                if (typeof playerData.avatar === 'string') {
+                  avatarUrl = playerData.avatar;
+                } else if (typeof playerData.avatar === 'object' && 'urlavatar' in playerData.avatar) {
+                  avatarUrl = playerData.avatar.urlavatar;
+                }
+              }
+              
               return {
-                id: playerData.userId,
-                pseudo: playerData.profile.pseudo,
-                avatar: playerData.profile.avatar || '/default-avatar.png',
+                id: playerData.id,
+                pseudo: playerData.pseudo,
+                avatar: avatarUrl,
                 isReady: playerData.isReady || false
               };
             });
