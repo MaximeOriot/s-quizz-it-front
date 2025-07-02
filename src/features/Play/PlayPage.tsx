@@ -5,34 +5,34 @@ import { useDispatch, useSelector } from 'react-redux';
 import { prepareSoloGameQuestionThunk } from '../Game/gameThunks';
 import { useEffect } from 'react';
 import { getAuthenticatedUserThunk } from '../auth/authThunks';
-import { fetchQuestionsThunk, prepareSoloGameQuestionThunk } from '../Game/gameThunks';
 import Button from '../../components/ui/Button';
-
-interface RootState {
-  auth: {
-    user: string | { email?: string; [key: string]: unknown } | null;
-    isAuthenticated: boolean;
-    loading: boolean;
-  };
-}
+import type { RootState, AppDispatch } from '../../store';
 
 function PlayPage() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     
     // Si on n'a pas de données utilisateur en state mais qu'on a un token
     if (!user && !isAuthenticated && token) {
-      dispatch(getAuthenticatedUserThunk());
+      dispatch(getAuthenticatedUserThunk())
+        .unwrap()
+        .catch(() => {
+          console.log('Token invalide ou expiré, nettoyage du localStorage');
+          // Nettoyer le localStorage si l'authentification échoue
+          localStorage.removeItem('token');
+          localStorage.removeItem('username');
+        });
     }
     
     // Si on n'a pas de token, l'utilisateur est en mode invité
     if (!token) {
       console.log('Utilisateur en mode invité');
-      // Optionnel: vous pouvez définir un état pour gérer le mode invité
+      // Nettoyer le nom d'utilisateur si pas de token
+      localStorage.removeItem('username');
     }
   }, [dispatch, user, isAuthenticated]);
 
@@ -42,11 +42,7 @@ function PlayPage() {
     
     // Si pas de nom dans localStorage, essayer de le récupérer depuis Redux
     if (!playerName && user) {
-      if (typeof user === 'string') {
-        playerName = user;
-      } else if (typeof user === 'object' && user.email) {
-        playerName = user.email;
-      }
+      playerName = user;
     }
     
     // Si toujours pas de nom, utiliser un nom par défaut pour les invités
@@ -64,7 +60,7 @@ function PlayPage() {
       });
       
       // Attendre que les questions soient récupérées avant de naviguer
-      await dispatch(prepareSoloGameQuestionThunk() as any);
+      await dispatch(prepareSoloGameQuestionThunk()).unwrap();
       navigate('/game'); // Redirection vers la page de jeu
     } catch (error) {
       console.error('Erreur lors de la préparation du jeu solo:', error);
