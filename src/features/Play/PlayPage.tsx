@@ -4,27 +4,27 @@ import Header from '../../components/ui/Header';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import { getAuthenticatedUserThunk } from '../auth/authThunks';
-import { prepareSoloGameQuestionThunk } from '../Game/gameThunks';
+import { fetchQuestionsThunk, prepareSoloGameQuestionThunk } from '../Game/gameThunks';
 
 function PlayPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user, isAuthenticated, loading } = useSelector((state: any) => state.auth);
 
-  // useEffect(() => {
-  //   const token = localStorage.getItem('token');
+  useEffect(() => {
+    const token = localStorage.getItem('token');
     
-  //   // Si on n'a pas de données utilisateur en state mais qu'on a un token
-  //   if (!user && !isAuthenticated && token) {
-  //     dispatch(getAuthenticatedUserThunk());
-  //   }
+    // Si on n'a pas de données utilisateur en state mais qu'on a un token
+    if (!user && !isAuthenticated && token) {
+      dispatch(getAuthenticatedUserThunk());
+    }
     
-  //   // Si on n'a pas de token, l'utilisateur est en mode invité
-  //   if (!token) {
-  //     console.log('Utilisateur en mode invité');
-  //     // Optionnel: vous pouvez définir un état pour gérer le mode invité
-  //   }
-  // }, [dispatch, user, isAuthenticated]);
+    // Si on n'a pas de token, l'utilisateur est en mode invité
+    if (!token) {
+      console.log('Utilisateur en mode invité');
+      // Optionnel: vous pouvez définir un état pour gérer le mode invité
+    }
+  }, [dispatch, user, isAuthenticated]);
 
   const handleSoloGame = async () => {
     const playerName = localStorage.getItem('username');
@@ -38,7 +38,8 @@ function PlayPage() {
       });
       
       // Attendre que les questions soient récupérées avant de naviguer
-      await dispatch(prepareSoloGameQuestionThunk());
+      // await dispatch(prepareSoloGameQuestionThunk());
+      await dispatch(fetchQuestionsThunk());
       navigate('/game'); // Redirection vers la page de jeu
     } catch (error) {
       console.error('Erreur lors de la préparation du jeu solo:', error);

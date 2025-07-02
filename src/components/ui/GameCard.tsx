@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useSelector } from 'react-redux';
 
 interface GameCardProps {
   title: string;
@@ -25,6 +26,7 @@ const GameCard: React.FC<GameCardProps> = ({
   onClick,
   hover = false,
 }) => {
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const baseClasses = 'rounded-2xl transition-all duration-200 relative overflow-hidden';
   
   const variantClasses = {
@@ -46,15 +48,16 @@ const GameCard: React.FC<GameCardProps> = ({
     none: 'left-8 text-center',
   };
   
-  const hoverClasses = hover ? 'hover:scale-105 hover:shadow-xl cursor-pointer' : '';
-  const clickableClasses = onClick ? 'cursor-pointer' : '';
+  const isClickable = (isAuthenticated || title === 'Solo') ? 'hover:scale-105 hover:shadow-xl cursor-pointer' : 'cursor-not-allowed';
+  const hoverClasses = hover ? `${isClickable}` : '';
+  const disabledClasses = !isAuthenticated && title !== 'Solo' ? 'opacity-50' : '';
   
   const classes = [
     baseClasses,
     variantClasses[variant],
     paddingClasses[padding],
     hoverClasses,
-    clickableClasses,
+    disabledClasses,
     height,
     className
   ].filter(Boolean).join(' ');

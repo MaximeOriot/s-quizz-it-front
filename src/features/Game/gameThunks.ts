@@ -6,7 +6,12 @@ export const fetchQuestionsThunk = createAsyncThunk(
   "game/fetchQuestions",
   async (_, { dispatch, rejectWithValue }) => {
     try {
-      const response = await fetch("https://backend-squizzit.dreadex.dev/api/normal/aleatoire/question");
+      const response = await fetch("https://backend-squizzit.dreadex.dev/api/normal/aleatoire/question?niveauDifficulte=2", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
