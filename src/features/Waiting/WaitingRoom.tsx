@@ -30,6 +30,16 @@ function WaitingRoom() {
   // Trouver la salle actuelle dans la liste des salles
   const roomInfo = rooms.find(room => room.id.toString() === roomId);
   
+  // Effet pour surveiller les changements dans les données de la salle
+  useEffect(() => {
+    if (roomInfo) {
+      console.log('Données de la salle mises à jour:', roomInfo);
+    }
+  }, [roomInfo]);
+
+  // Trouver la salle actuelle dans la liste des salles
+  const roomInfo = rooms.find(room => room.id.toString() === roomId);
+  
   useEffect(() => {
     if (roomInfo) {
       console.log('Données de la salle mises à jour:', roomInfo);
