@@ -4,6 +4,8 @@ import PlayPage from "../features/Play/PlayPage";
 import ScorePage from "../features/Score/ScorePage";
 import WaitingRoom from "../features/Waiting/WaitingRoom";
 import GamePage from "../features/Game/GamePage";
+import GlobalRoomPage from "../features/GlobalRoom/GlobalRoomPage";
+import Profile from "../features/Profile/Profile";
 
 export const router = createBrowserRouter([
     {
@@ -25,5 +27,13 @@ export const router = createBrowserRouter([
     {
         path: '/game', 
         element: <GamePage />,
+    },
+    {
+        path: '/globalRoom',
+        element: <GlobalRoomPage />,
+    },
+    {
+        path: '/profile',
+        element: <Profile />
     }
 ]);

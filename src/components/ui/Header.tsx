@@ -1,6 +1,6 @@
 import React from 'react';
 import logo from '../../assets/logo-squizzit-removed-bg.png';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../../features/auth/authSlice';
 import { useDispatch } from 'react-redux';
 
@@ -11,6 +11,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ playerName }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
 
   const handleLogout = () => {
     // Dispatch logout action
@@ -20,11 +21,11 @@ const Header: React.FC<HeaderProps> = ({ playerName }) => {
   };
 
   return (
-    <nav className="flex justify-between items-center py-3 w-full border-b lg:px-6 border-b-secondary">
-      <div className="flex gap-3 items-center">
+    <nav className="flex items-center justify-between w-full py-3 border-b lg:px-6 border-b-secondary">
+      <div className="flex items-center gap-3">
         <img src={logo} alt="Logo S-quizz-it" className="w-20 h-auto" />
       </div>
-      <div className='flex gap-4 items-center'>
+      <div className='flex items-center gap-4'>
         <button
                 onClick={() => handleLogout()}
                 className="px-4 py-2 font-semibold border-b-2 border-secondary text-secondary"
@@ -32,8 +33,9 @@ const Header: React.FC<HeaderProps> = ({ playerName }) => {
                 Se déconnecter
               </button>
         <div className="text-lg font-semibold">
-          {playerName ? `Bienvenue, ${playerName}!` : 'Bienvenue, invité!'}
+          {playerName ? `Bienvenue, ${playerName} !` : 'Bienvenue, invité!'}
         </div>
+        <img src='./src/assets/settings.png' width={25} onClick={() => navigate('/profile', { state: { from: location.pathname } })} className='cursor-pointer'/>
       </div>
     </nav>
   )

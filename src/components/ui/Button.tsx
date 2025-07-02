@@ -2,7 +2,7 @@ import React from 'react';
 
 interface ButtonProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'disabled';
   textSize?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   loading?: boolean;
@@ -31,6 +31,7 @@ const Button: React.FC<ButtonProps> = ({
     outline: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50 focus:ring-blue-500',
     ghost: 'text-blue-600 hover:bg-blue-50 focus:ring-blue-500',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+    disabled: 'bg-gray-300 text-gray-600 hover:bg-gray-300 focus:ring-gray-400',
   };
   
   const textSizeClasses = {
