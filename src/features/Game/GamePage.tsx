@@ -23,7 +23,7 @@ interface RootState {
     playerName: string | null;
     gameId: string | null;
     isGameStarted: boolean;
-    gameType: 'SOLO' | 'MULTIPLAYER' | 'CATEGORY' | 'FRIENDS';
+    gameType: 'SOLO' | 'MULTIPLAYER' | 'CATEGORY' | 'FRIENDS' | 'NONE';
   };
 }
 

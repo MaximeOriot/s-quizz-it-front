@@ -35,7 +35,19 @@ async (_, { dispatch, rejectWithValue }) => {
         await new Promise(resolve => setTimeout(resolve, 500));
         
         const questionMock = await import("../../../questionMock.json");
-        const questions = questionMock.default || questionMock;
+        const rawQuestions = questionMock.default || questionMock;
+        
+        // Transformer les questions pour correspondre à la structure attendue
+        const questions = rawQuestions.map((question: any) => ({
+          id: question.id.toString(),
+          label: question.label,
+          reponses: question.reponses.map((reponse: any, index: number) => ({
+            id: reponse.id.toString(),
+            label: reponse.label,
+            // Pour le mock, on considère que la première réponse est toujours correcte
+            isCorrect: index === 0
+          }))
+        }));
         
         dispatch(setQuestions(questions));
         return questions;

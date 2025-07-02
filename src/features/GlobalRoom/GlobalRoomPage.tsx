@@ -8,6 +8,7 @@ import { RoomCard } from "./components/RoomCard";
 
 function GlobalRoom() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [forceCloseModal, setForceCloseModal] = useState(false);
 
   const { 
     isConnected, 
