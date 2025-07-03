@@ -45,5 +45,9 @@ export const router = createBrowserRouter([
     {
         path: '*',
         element: <ProtectedRoute fallback={<HomePage />} />,
+    },
+    { 
+        path: '/results',
+        element: <ResultsPage />
     }
 ]);

@@ -403,11 +403,37 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
           }
           break;
           
+        case 'game_started':
+        case 'start_game':
+          console.log('🎮 Jeu démarré, redirection vers la page de jeu...');
+          // Rediriger vers la page de jeu
+          if (roomId) {
+            window.location.href = `/game?roomId=${roomId}`;
+          }
+          break;
+          
+        case 'error':
+          if ('message' in messageData) {
+            console.error('❌ Erreur du serveur:', messageData.message);
+            
+            // Gérer spécifiquement l'erreur "Salon introuvable"
+            if (messageData.message === 'Salon introuvable') {
+              console.log('🚪 Salon introuvable, nettoyage de la salle...');
+              dispatch(resetRoom());
+              dispatch(setError('La salle n\'existe plus ou a été fermée'));
+              return;
+            }
+            
+            // Pour les autres erreurs, ne pas rediriger automatiquement
+            dispatch(setError(messageData.message as string));
+          }
+          break;
+          
         case 'join_room_success':
         case 'room_joined':
         case 'connected':
         case 'join':
-          console.log('Salle rejoint avec succès (type direct):', messageData);
+          console.log('🎮 Salle rejoint avec succès (type direct):', messageData);
           
           if ('players' in messageData) {
             console.log('Données de joueurs reçues lors de la connexion (type direct):', messageData.players);
@@ -468,9 +494,34 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
           dispatch(setRoomLoading(false));
           break;
           
-        case 'game_start':
-          console.log('Le jeu commence !');
+        case 'leave':
+        case 'room_left':
+          console.log('🚪 Déconnexion de la salle:', messageData);
+          // Ne pas se reconnecter automatiquement si on quitte volontairement
+          if (roomId) {
+            console.log('🚪 Nettoyage de la salle après déconnexion...');
+            dispatch(resetRoom());
+          }
           break;
+          
+        case 'game_start':
+        case 'broadcast_game_start':
+          console.log('🎮 Le jeu commence ! Redirection vers la page de jeu...');
+          if (roomId) {
+            // Rediriger vers la page de jeu avec l'ID de la salle
+            window.location.href = `/game?roomId=${roomId}`;
+          }
+          break;
+          
+        case 'room_status_changed': {
+          console.log('🎮 Statut de la salle changé:', messageData.payload);
+          const payload = messageData.payload as Record<string, unknown>;
+          if (roomId && payload?.status === 'started') {
+            console.log('🎮 La salle a commencé ! Redirection automatique...');
+            window.location.href = `/game?roomId=${roomId}`;
+          }
+          break;
+        }
           
         default:
           console.log('Message non géré:', messageData.type, messageData);
@@ -626,6 +677,13 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
       console.log(`🚪 Rejoindre la salle ${roomId}...`);
       console.log(`🚪 État de connexion:`, isConnected);
       console.log(`🚪 CurrentRoom actuel:`, currentRoom);
+      
+      // Vérifier si on est déjà dans cette salle
+      if (currentRoom && currentRoom.roomId === roomId && currentRoom.players && currentRoom.players.length > 0) {
+        console.log('🚪 Déjà dans cette salle, pas de reconnexion nécessaire');
+        return;
+      }
+      
       dispatch(setRoomLoading(true));
       
       // Ne pas réinitialiser la room si elle existe déjà avec des joueurs
@@ -644,7 +702,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
 
       return () => clearTimeout(timeout);
     }
-  }, [roomId, isConnected, sendWebSocketMessage, dispatch, currentRoom]);
+  }, [roomId, isConnected, sendWebSocketMessage, dispatch]);
 
   // Effet pour demander les salles globales quand connecté et pas dans une salle
   useEffect(() => {

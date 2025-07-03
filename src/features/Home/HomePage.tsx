@@ -32,14 +32,16 @@ function HomePage() {
   const onLoginSuccess = () => {
     setIsLogged(true);
     setShowAuthModal(false);
+    // Redirection automatique vers /play après connexion réussie
+    navigate('/play');
   };
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6">
+    <div className="flex flex-col gap-6 justify-center items-center">
       {isLogged || isUserConnected ?(
         <Header />
       ):(
-        <div className="flex flex-row-reverse w-full gap-4 mt-4">
+        <div className="flex flex-row-reverse gap-4 mt-4 w-full">
           <Button
             onClick={() => onAuthClick(true)}
             variant='primary'
@@ -59,8 +61,8 @@ function HomePage() {
         </div>
       )}
 
-      <div className="flex flex-col items-center justify-center w-full max-w-5xl my-12 lg:my-36">
-        <div className="flex flex-col items-center justify-center mb-12 lg:relative lg:block">
+      <div className="flex flex-col justify-center items-center my-12 w-full max-w-5xl lg:my-36">
+        <div className="flex flex-col justify-center items-center mb-12 lg:relative lg:block">
           <img
             src={logo}
             alt="Logo S-quizz-it"
@@ -70,7 +72,7 @@ function HomePage() {
             Le quiz qui met l'ambiance, et la <span className="text-primary">pression !</span>
           </div>
 
-          <div className="flex justify-end hidden w-full lg:flex">
+          <div className="flex hidden justify-end w-full lg:flex">
             <Button
               variant="primary"
               textSize="lg"

@@ -22,7 +22,7 @@ function WaitingRoom() {
     rooms, 
     currentRoom, 
     roomLoading, 
-    allPlayersReady,
+    error,
     setPlayerReady,
     refreshRooms,
     sendWebSocketMessage
@@ -43,11 +43,17 @@ function WaitingRoom() {
       const timeout = setTimeout(() => {
         console.warn('⚠️ Timeout de sécurité: Chargement de la salle depuis plus de 30 secondes');
         console.warn('⚠️ État actuel:', { isConnected, hasReceivedData, roomLoading, currentRoom });
+        
+        // Si on est toujours en chargement après 30 secondes, essayer de se reconnecter
+        if (roomId) {
+          console.log('🔄 Tentative de reconnexion après timeout...');
+          sendWebSocketMessage(`connect-${roomId}`);
+        }
       }, 30000); // 30 secondes
 
       return () => clearTimeout(timeout);
     }
-  }, [roomLoading, isConnected, hasReceivedData, currentRoom]);
+  }, [roomLoading, isConnected, hasReceivedData, currentRoom, roomId, sendWebSocketMessage]);
 
   // Effet pour demander périodiquement les données mises à jour
   useEffect(() => {
@@ -55,11 +61,47 @@ function WaitingRoom() {
       const interval = setInterval(() => {
         console.log('🔄 Demande périodique des données mises à jour...');
         sendWebSocketMessage(`get_players-${roomId}`);
-      }, 5000); // Toutes les 5 secondes
+        sendWebSocketMessage(`get_salon_info-${roomId}`);
+        
+        // Log des données actuelles pour debug
+        console.log('🎮 État actuel de la salle:', {
+          roomId,
+          players: currentRoom.players,
+          readyPlayers: currentRoom.players?.filter(p => p.isReady).length,
+          totalPlayers: currentRoom.players?.length
+        });
+        
+        // Vérifier si le jeu a commencé en regardant l'URL
+        if (window.location.pathname === '/waitingRoom' && window.location.search.includes('roomId=')) {
+          // Vérifier si le jeu a commencé via localStorage (méthode de secours)
+          const gameStartedTime = localStorage.getItem(`game_started_${roomId}`);
+          if (gameStartedTime) {
+            const startTime = parseInt(gameStartedTime);
+            const now = Date.now();
+            // Si le jeu a commencé il y a moins de 30 secondes, rediriger
+            if (now - startTime < 30000) {
+              console.log('🎮 Détection localStorage: Le jeu a commencé ! Redirection...');
+              localStorage.removeItem(`game_started_${roomId}`); // Nettoyer
+              window.location.href = `/game?roomId=${roomId}`;
+              return;
+            } else {
+              // Nettoyer si trop ancien
+              localStorage.removeItem(`game_started_${roomId}`);
+            }
+          }
+          
+          // Si on est encore dans la salle d'attente, vérifier si le jeu a commencé
+          // en regardant si la salle a changé de statut
+          if (roomInfo?.commence) {
+            console.log('🎮 Détection automatique: Le jeu a commencé ! Redirection...');
+            window.location.href = `/game?roomId=${roomId}`;
+          }
+        }
+      }, 2000); // Toutes les 2 secondes pour une réponse encore plus rapide
 
       return () => clearInterval(interval);
     }
-  }, [roomId, isConnected, currentRoom, sendWebSocketMessage]);
+  }, [roomId, isConnected, currentRoom, sendWebSocketMessage, roomInfo]);
 
   // Récupérer l'id du joueur courant depuis localStorage (défini à la connexion WebSocket)
   const userId = localStorage.getItem('userId');
@@ -82,6 +124,9 @@ function WaitingRoom() {
   // État local pour le statut "prêt" (optimiste)
   const [localIsReady, setLocalIsReady] = useState(false);
   
+  // État pour suivre les joueurs précédents
+  const [previousPlayerCount, setPreviousPlayerCount] = useState(0);
+  
   // Synchroniser l'état local avec les données du serveur
   useEffect(() => {
     if (currentPlayer) {
@@ -89,11 +134,44 @@ function WaitingRoom() {
     }
   }, [currentPlayer]);
   
+  // Détecter si des joueurs ont quitté (peut indiquer qu'ils sont partis jouer)
+  useEffect(() => {
+    if (currentRoom?.players && previousPlayerCount > 0 && currentRoom.players.length < previousPlayerCount) {
+      console.log('🎮 Détection: Des joueurs ont quitté la salle, ils sont peut-être partis jouer...');
+      // Attendre un peu puis rediriger
+      setTimeout(() => {
+        if (window.location.pathname === '/waitingRoom') {
+          console.log('🎮 Redirection suite au départ des joueurs...');
+          window.location.href = `/game?roomId=${roomId}`;
+        }
+      }, 2000);
+    }
+    setPreviousPlayerCount(currentRoom?.players?.length || 0);
+  }, [currentRoom?.players, previousPlayerCount, roomId]);
+  
   // Déterminer si le joueur est prêt (local ou serveur)
   const isReady = currentPlayer ? currentPlayer.isReady : localIsReady;
   const actualTotalPlayers = currentRoom?.players.length || 0;
   const maxPlayers = roomInfo?.j_max || 10;
+  
+  // Compter seulement les joueurs qui sont vraiment prêts
+  const readyPlayers = currentRoom?.players?.filter(player => player.isReady === true).length || 0;
   const missingPlayers = Math.max(0, maxPlayers - actualTotalPlayers);
+  
+  // Tous les joueurs sont prêts seulement si tous les joueurs présents sont prêts ET qu'il y a au moins 2 joueurs
+  const allPlayersReady = readyPlayers > 0 && readyPlayers === actualTotalPlayers && actualTotalPlayers >= 2;
+  
+  // Effet pour forcer la redirection si tous les joueurs sont prêts depuis trop longtemps
+  useEffect(() => {
+    if (allPlayersReady && window.location.pathname === '/waitingRoom') {
+      const timeout = setTimeout(() => {
+        console.log('🎮 Force redirection: Tous les joueurs prêts depuis 5 secondes...');
+        window.location.href = `/game?roomId=${roomId}`;
+      }, 5000); // 5 secondes après que tous soient prêts
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [allPlayersReady, roomId]);
 
   const getLoadingMessage = () => {
     if (!isConnected) {
@@ -120,6 +198,34 @@ function WaitingRoom() {
       sendWebSocketMessage(`get_players-${roomId}`);
     }
   };
+
+  // Fonction pour lancer le jeu
+  const startGame = () => {
+    console.log('🎮 Lancement du jeu...');
+    if (roomId) {
+      // Envoyer le message au serveur
+      sendWebSocketMessage(`start-${roomId}`);
+      
+      // Envoyer un message broadcast pour tous les joueurs de la salle
+      sendWebSocketMessage(`broadcast_game_start-${roomId}`);
+      
+      // Marquer dans localStorage que le jeu a commencé pour cette salle
+      localStorage.setItem(`game_started_${roomId}`, Date.now().toString());
+      
+      // Redirection immédiate pour le joueur qui lance
+      console.log('🔄 Redirection immédiate vers la page de jeu...');
+      window.location.href = `/game?roomId=${roomId}`;
+    }
+  };
+
+  // Logs de debug
+  console.log('Current room players:', currentRoom?.players);
+  console.log('Current player:', currentPlayer);
+  console.log('Is ready:', isReady);
+  console.log('currentPlayerId:', currentPlayerId);
+  console.log('Player IDs in room:', currentRoom?.players?.map(p => p.id));
+  console.log('Ready players count:', readyPlayers);
+  console.log('All players ready:', allPlayersReady);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -148,6 +254,32 @@ function WaitingRoom() {
             >
               Recharger la page
             </Button>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col flex-1 gap-4 justify-center items-center">
+          <div className="text-center">
+            <h2 className="mb-4 text-xl font-semibold text-red-500">Erreur de connexion</h2>
+            <p className="mb-4 text-secondary">{error}</p>
+            <div className="flex gap-4">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  console.log('🔄 Tentative de reconnexion...');
+                  if (roomId) {
+                    sendWebSocketMessage(`connect-${roomId}`);
+                  }
+                }}
+              >
+                Réessayer
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => window.location.href = '/globalRoom'}
+              >
+                Retour aux salles
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
@@ -181,6 +313,11 @@ function WaitingRoom() {
                   <span className="font-semibold">{actualTotalPlayers}</span>
                   <span className="mx-1">/</span>
                   <span>{maxPlayers} joueurs</span>
+                  {readyPlayers > 0 && (
+                    <span className="ml-2 text-green-500">
+                      ({readyPlayers} prêt{readyPlayers > 1 ? 's' : ''})
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -211,12 +348,19 @@ function WaitingRoom() {
                       <span className={`text-secondary ${player.id === currentPlayerId ? 'font-bold' : ''}`}>
                         {player.id === currentPlayerId ? `${player.pseudo} (Vous)` : player.pseudo}
                       </span>
-                      <input
-                        type="checkbox"
-                        checked={playerIsReady}
-                        readOnly
-                        className="ml-2 w-4 h-4 accent-thirdary"
-                      />
+                      <div className="flex items-center ml-2">
+                        <input
+                          type="checkbox"
+                          checked={playerIsReady}
+                          readOnly
+                          className="w-4 h-4 accent-thirdary"
+                        />
+                        {playerIsReady && (
+                          <span className="ml-1 text-xs font-semibold text-green-500">
+                            ✅ Prêt
+                          </span>
+                        )}
+                      </div>
                     </li>
                   );
                 })}
@@ -229,9 +373,20 @@ function WaitingRoom() {
 
             {allPlayersReady ? (
               <div className="p-4 mt-6 bg-green-100 rounded-lg border border-green-400">
-                <p className="font-semibold text-center text-green-800">
+                <p className="mb-4 font-semibold text-center text-green-800">
                   🎉 Tous les joueurs sont prêts ! Le jeu peut commencer.
                 </p>
+                <div className="text-center">
+                  <Button
+                    variant="primary"
+                    textSize="lg"
+                    width="6xl"
+                    onClick={startGame}
+                    className="text-white bg-green-600 hover:bg-green-700"
+                  >
+                    🎮 Lancer le jeu
+                  </Button>
+                </div>
               </div>
             ) : (
               <p className="mt-6 text-sm text-secondary">
@@ -258,6 +413,40 @@ function WaitingRoom() {
                 }}
               >
                 Actualiser la liste des salles
+              </Button>
+              
+              {/* Bouton de debug pour forcer la mise à jour */}
+              <Button
+                variant="secondary"
+                textSize="sm"
+                width="6xl"
+                onClick={forceUpdateRoomData}
+                className="text-white bg-blue-500 hover:bg-blue-600"
+              >
+                🔄 Force Update Room Data
+              </Button>
+              
+              {/* Bouton de debug pour afficher l'état actuel */}
+              <Button
+                variant="secondary"
+                textSize="sm"
+                width="6xl"
+                onClick={() => {
+                  console.log('🎮 État actuel de la salle (debug):', {
+                    roomId,
+                    currentRoom,
+                    roomInfo,
+                    currentPlayer,
+                    currentPlayerId,
+                    isReady,
+                    readyPlayers,
+                    allPlayersReady,
+                    localIsReady
+                  });
+                }}
+                className="text-white bg-green-500 hover:bg-green-600"
+              >
+                🔍 Debug State
               </Button>
             </div>
           </div>
