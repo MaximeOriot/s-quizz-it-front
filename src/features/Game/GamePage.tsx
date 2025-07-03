@@ -1,14 +1,22 @@
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Header from "../../components/ui/Header";
-import type { RootState } from './types/game.types';
+import type { AppDispatch } from '../../store';
+import type { RootState as GameRootState } from './types/game.types';
 import { useGameLogic } from './hooks/useGameLogic.hook';
 import { getAnswerButtonClass } from './utils/gameStyles.utils';
+import { fetchQuestionsThunk } from './gameThunks';
+import { startGame } from './gameSlice';
 
 export default function GamePage() {
+  const dispatch = useDispatch<AppDispatch>();
+  const [searchParams] = useSearchParams();
+  const roomId = searchParams.get('roomId');
+  
   // Sélecteurs Redux
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { questions, playerName, isGameStarted, gameId, gameType } = useSelector((state: RootState) => state.game);
+  const { user } = useSelector((state: GameRootState) => state.auth);
+  const { questions, playerName, isGameStarted, gameId, gameType } = useSelector((state: GameRootState) => state.game);
 
   const { gameState, handleAnswerClick, startTimer } = useGameLogic({
     questions,
@@ -17,6 +25,40 @@ export default function GamePage() {
     user,
     playerName
   });
+
+  // Détecter le mode multijoueur et récupérer les questions si nécessaire
+  useEffect(() => {
+    const isMultiplayerMode = roomId !== null;
+    
+    if (isMultiplayerMode && (!questions || questions.length === 0)) {
+      console.log('🎮 Mode multijoueur détecté, récupération des questions...');
+      
+      // Récupérer les questions pour le mode multijoueur
+      dispatch(fetchQuestionsThunk())
+        .unwrap()
+        .then(() => {
+          console.log('✅ Questions récupérées pour le mode multijoueur');
+          // Démarrer le jeu une fois les questions récupérées
+          dispatch(startGame());
+        })
+        .catch((error) => {
+          console.error('❌ Erreur lors de la récupération des questions:', error);
+        });
+    } else if (!isMultiplayerMode && !isGameStarted && (!questions || questions.length === 0)) {
+      console.log('🎮 Mode solo détecté, récupération des questions...');
+      
+      // Récupérer les questions pour le mode solo
+      dispatch(fetchQuestionsThunk())
+        .unwrap()
+        .then(() => {
+          console.log('✅ Questions récupérées pour le mode solo');
+          dispatch(startGame());
+        })
+        .catch((error) => {
+          console.error('❌ Erreur lors de la récupération des questions:', error);
+        });
+    }
+  }, [roomId, questions, isGameStarted, dispatch]);
 
   // Démarrer le timer au montage du composant
   useEffect(() => {
@@ -27,11 +69,16 @@ export default function GamePage() {
 
   // Affichage de chargement
   if (!questions || questions.length === 0 || !isGameStarted) {
+    const gameMode = roomId ? 'multijoueur' : 'solo';
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <div className="w-8 h-8 mx-auto mb-4 border-b-2 border-blue-500 rounded-full animate-spin"></div>
-          <p>Chargement des questions...</p>
+          <div className="mx-auto mb-4 w-8 h-8 rounded-full border-b-2 border-blue-500 animate-spin"></div>
+          <p className="mb-2">Chargement des questions...</p>
+          <p className="text-sm text-secondary">Mode {gameMode}</p>
+          {roomId && (
+            <p className="mt-1 text-xs text-secondary">Salle {roomId}</p>
+          )}
         </div>
       </div>
     );
@@ -46,11 +93,11 @@ export default function GamePage() {
       <div className="container px-4 py-8 mx-auto">
         {/* En-tête de la question */}
         <div className="p-6 mb-6 rounded-lg shadow-md bg-secondary">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-primary">
               Question {gameState.currentQuestionIndex + 1} / {questions.length}
             </h2>
-            <div className="flex items-center gap-4">
+            <div className="flex gap-4 items-center">
               <span className="text-sm text-primary">Score: {gameState.score}</span>
               {gameType === 'MULTIPLAYER' && (
                 <span className="text-sm text-primary">
@@ -66,7 +113,7 @@ export default function GamePage() {
           {/* Barre de progression */}
           <div className="w-full h-2 rounded-full bg-primary">
             <div 
-              className="h-2 transition-all duration-1000 bg-blue-400 rounded-full"
+              className="h-2 bg-blue-400 rounded-full transition-all duration-1000"
               style={{ width: `${(gameState.timeLeft / 20) * 100}%` }}
             ></div>
           </div>
@@ -74,24 +121,24 @@ export default function GamePage() {
 
         {/* Indicateur d'attente multijoueur */}
         {gameState.waitingForPlayers && gameType === 'MULTIPLAYER' && (
-          <div className="p-4 mb-6 text-center bg-yellow-100 border border-yellow-400 rounded-lg">
+          <div className="p-4 mb-6 text-center bg-yellow-100 rounded-lg border border-yellow-400">
             <p className="text-yellow-800">
               En attente des autres joueurs... ({gameState.playersAnswered.length}/{gameState.totalPlayers})
             </p>
             <div className="flex justify-center mt-2">
-              <div className="w-6 h-6 border-b-2 border-yellow-800 rounded-full animate-spin"></div>
+              <div className="w-6 h-6 rounded-full border-b-2 border-yellow-800 animate-spin"></div>
             </div>
           </div>
         )}
 
         {/* Indicateur de vérification en cours */}
         {gameState.answerStatus === 'pending' && (
-          <div className="p-4 mb-6 text-center bg-gray-100 border border-gray-300 rounded-lg">
+          <div className="p-4 mb-6 text-center bg-gray-100 rounded-lg border border-gray-300">
             <p className="text-gray-700">
               Vérification de votre réponse...
             </p>
             <div className="flex justify-center mt-2">
-              <div className="w-4 h-4 border-b-2 border-gray-600 rounded-full animate-spin"></div>
+              <div className="w-4 h-4 rounded-full border-b-2 border-gray-600 animate-spin"></div>
             </div>
           </div>
         )}
@@ -120,7 +167,7 @@ export default function GamePage() {
                 <span className="ml-2">{reponse.label}</span>
                 {gameState.selectedAnswer === index && gameState.answerStatus === 'pending' && (
                   <span className="ml-2">
-                    <div className="inline-block w-4 h-4 border-b-2 border-gray-600 rounded-full animate-spin"></div>
+                    <div className="inline-block w-4 h-4 rounded-full border-b-2 border-gray-600 animate-spin"></div>
                   </span>
                 )}
               </button>

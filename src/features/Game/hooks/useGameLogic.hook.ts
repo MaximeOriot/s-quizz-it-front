@@ -195,14 +195,49 @@ export const useGameLogic = ({ questions, gameType, gameId, user, playerName }: 
   });
 
   const verifyAnswerAPI = useCallback(async (answerIndex: number) => {
+    // Ne pas appeler l'API REST en mode multijoueur
+    if (gameType === 'MULTIPLAYER') {
+      console.log('🎮 Mode multijoueur: API REST ignorée, utilisation WebSocket uniquement');
+      return;
+    }
+    
     try {
       const currentQuestion = questions[gameState.currentQuestionIndex];
       const selectedResponse = currentQuestion.reponses[answerIndex];
       
+      // Gérer les différents formats de user (string, object, ou null)
+      let userId = '0';
+      if (user) {
+        if (typeof user === 'string') {
+          userId = user;
+        } else if (typeof user === 'object' && user !== null && 'id' in user) {
+          userId = (user as { id: string }).id;
+        }
+      }
+      
+      // Utiliser playerName comme fallback si user n'est pas disponible
+      if (userId === '0' && playerName) {
+        userId = playerName;
+      }
+      
+      console.log('🎮 Mode solo: Envoi à l\'API REST avec userId:', userId);
+      
+      // Gérer l'ID utilisateur : si c'est un UUID (chaîne), utiliser 1, sinon convertir en nombre
+      let idJoueur: number;
+      if (typeof userId === 'string' && userId.includes('-')) {
+        // C'est un UUID, utiliser un ID par défaut
+        idJoueur = 1;
+        console.log('🎮 UUID détecté, utilisation de l\'ID par défaut:', idJoueur);
+      } else {
+        // C'est un nombre, le convertir
+        idJoueur = parseInt(userId) || 1;
+        console.log('🎮 ID numérique converti:', idJoueur);
+      }
+      
       const requestData: VerifyAnswerRequest = {
         idQuestion: parseInt(currentQuestion.id),
         idReponse: parseInt(selectedResponse.id),
-        idJoueur: user.id || playerName || '0',
+        idJoueur: idJoueur,
         tempsReponse: 20 - timeLeft,
         type: "qcm",
         reponseJoueur: selectedResponse.label
@@ -278,6 +313,8 @@ export const useGameLogic = ({ questions, gameType, gameId, user, playerName }: 
       const currentQuestion = questions[gameState.currentQuestionIndex];
       const selectedResponse = currentQuestion.reponses[answerIndex];
       
+      console.log('🎮 Mode multijoueur: Envoi réponse via WebSocket');
+      
       const answerData: AnswerData = {
         salonId: gameId || '',
         questionId: currentQuestion.id,
@@ -289,6 +326,7 @@ export const useGameLogic = ({ questions, gameType, gameId, user, playerName }: 
       sendWebSocketAnswer(answerData);
       setGameState(prev => ({ ...prev, waitingForPlayers: true }));
     } else {
+      console.log('🎮 Mode solo: Envoi réponse via API REST');
       verifyAnswerAPI(answerIndex);
     }
   }, [gameState.selectedAnswer, gameState.isAnswering, gameState.waitingForPlayers, gameState.currentQuestionIndex, clearTimer, gameType, questions, gameId, timeLeft, sendWebSocketAnswer, verifyAnswerAPI]);
