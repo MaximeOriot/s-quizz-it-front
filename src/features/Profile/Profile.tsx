@@ -174,6 +174,16 @@ function Profile() {
                 </Button>
                 </div>
             </div>
+            <div className="absolute right-40 bottom-52">
+                <Button
+                onClick={() => navigate('/score')}
+                variant="thirdary"
+                textSize="sm"
+                width='5xl'
+                >
+                    Détails score
+                </Button>
+            </div>
             <div className="absolute right-40 top-40">
                 <Button
                 onClick={() => setShowFriendsModal(true)}
