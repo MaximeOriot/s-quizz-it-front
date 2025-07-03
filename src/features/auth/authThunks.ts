@@ -37,7 +37,7 @@ export const loginThunk = createAsyncThunk(
       } else {
         localStorage.setItem('username', data.profile.pseudo);
       }
-      dispatch(loginSuccess(data.user));
+      dispatch(loginSuccess(data.profile));
       return data; // Retourner les données en cas de succès
     } catch (error: any) {
       dispatch(loginFailure(error.message));
@@ -76,7 +76,7 @@ export const registerThunk = createAsyncThunk(
         }
         
         localStorage.setItem('username', data.profile.pseudo);
-        dispatch(loginSuccess(data.user));
+        dispatch(loginSuccess(data.profile));
         } catch (error: any) {
         dispatch(loginFailure(error.message));
         }
