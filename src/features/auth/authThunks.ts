@@ -19,10 +19,23 @@ export const loginThunk = createAsyncThunk(
       
       const data = await response.json();
       localStorage.setItem('token', data.session.access_token);
+      
+      // Stocker les données du profil utilisateur
+      if (data.profile) {
+        localStorage.setItem('userProfile', JSON.stringify(data.profile));
+        console.log('📋 Profil utilisateur stocké (login):', data.profile);
+      }
+      
+      // Stocker l'ID utilisateur
+      if (data.user && data.user.id) {
+        localStorage.setItem('userId', data.user.id);
+        console.log('🆔 ID utilisateur stocké (login):', data.user.id);
+      }
+      
       if(!data.profile || !data.profile.pseudo) {
-      localStorage.setItem('username', 'meh'); // Valeur par défaut si pseudo non disponible
+        localStorage.setItem('username', 'meh'); // Valeur par défaut si pseudo non disponible
       } else {
-      localStorage.setItem('username', data.profile.pseudo);
+        localStorage.setItem('username', data.profile.pseudo);
       }
       dispatch(loginSuccess(data.user));
       return data; // Retourner les données en cas de succès
@@ -49,6 +62,19 @@ export const registerThunk = createAsyncThunk(
         }
         const data = await response.json();
         localStorage.setItem('token', data.session.access_token);
+        
+        // Stocker les données du profil utilisateur
+        if (data.profile) {
+          localStorage.setItem('userProfile', JSON.stringify(data.profile));
+          console.log('📋 Profil utilisateur stocké (register):', data.profile);
+        }
+        
+        // Stocker l'ID utilisateur
+        if (data.user && data.user.id) {
+          localStorage.setItem('userId', data.user.id);
+          console.log('🆔 ID utilisateur stocké (register):', data.user.id);
+        }
+        
         localStorage.setItem('username', data.profile.pseudo);
         dispatch(loginSuccess(data.user));
         } catch (error: any) {
@@ -72,6 +98,19 @@ export const getAuthenticatedUserThunk = createAsyncThunk(
               throw new Error(`HTTP error! status: ${response.status}`);
           }
           const data = await response.json();
+          
+          // Stocker les données du profil utilisateur
+          if (data.profile) {
+              localStorage.setItem('userProfile', JSON.stringify(data.profile));
+              console.log('📋 Profil utilisateur stocké:', data.profile);
+          }
+          
+          // Stocker l'ID utilisateur
+          if (data.user && data.user.id) {
+              localStorage.setItem('userId', data.user.id);
+              console.log('🆔 ID utilisateur stocké:', data.user.id);
+          }
+          
           dispatch(loginSuccess(data.user));
           return data;
       } catch (error: any) {

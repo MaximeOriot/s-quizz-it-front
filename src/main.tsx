@@ -6,11 +6,21 @@ import { router } from './router'
 
 import { Provider } from 'react-redux'
 import store from './store'
+import { WebSocketProvider } from './contexts/WebSocketContext'
+import { PlayerProvider } from './contexts/PlayerContext'
+import { initWebSocket } from './util/initWebSocket'
+
+// Initialiser le WebSocket au démarrage de l'application
+initWebSocket();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={store}>
-      <RouterProvider router={router}/>
+      <PlayerProvider>
+        <WebSocketProvider>
+          <RouterProvider router={router}/>
+        </WebSocketProvider>
+      </PlayerProvider>
     </Provider>
   </StrictMode>,
 )

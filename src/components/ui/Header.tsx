@@ -3,10 +3,7 @@ import logo from '../../assets/logo-squizzit-removed-bg.png';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../../features/auth/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
-
-interface HeaderProps {
-  playerName?: string | null;
-}
+import { usePlayerContext } from '../../contexts/usePlayerContext';
 
 interface RootState {
   auth: {
@@ -15,10 +12,11 @@ interface RootState {
   };
 }
 
-const Header: React.FC<HeaderProps> = ({ playerName }) => {
+const Header: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
+  const { playerName } = usePlayerContext();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   console.log(user);
 

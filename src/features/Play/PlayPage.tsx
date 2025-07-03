@@ -2,9 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import Bento from '../../components/ui/Bento';
 import Header from '../../components/ui/Header';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchQuestionsThunk } from '../Game/gameThunks';
 import { useEffect } from 'react';
 import { getAuthenticatedUserThunk } from '../auth/authThunks';
+import { fetchQuestionsThunk, prepareSoloGameQuestionThunk } from '../Game/gameThunks';
+import { prepareSoloGame } from '../Game/gameSlice';
 import Button from '../../components/ui/Button';
 import type { RootState, AppDispatch } from '../../store';
 
@@ -53,11 +54,8 @@ function PlayPage() {
     const gameId = 'solo-' + Date.now(); // Génération d'un ID de jeu unique pour le mode solo
     
     try {
-      // Dispatch d'une action pour préparer le jeu solo
-      dispatch({
-        type: 'game/prepareSoloGame',
-        payload: { playerName, gameId }
-      });
+      // Dispatch de l'action pour préparer le jeu solo
+      dispatch(prepareSoloGame({ playerName, gameId }));
       
       // Attendre que les questions soient récupérées avant de naviguer
       await dispatch(fetchQuestionsThunk()).unwrap();
@@ -136,7 +134,7 @@ function PlayPage() {
   ];
 
   return (
-    <div className="flex flex-col gap-6 justify-center items-center">
+    <div className="flex flex-col items-center justify-center gap-6">
         <Header />
         <div className="text-center lg:my-6 title">
             Que veux-tu faire ? 
