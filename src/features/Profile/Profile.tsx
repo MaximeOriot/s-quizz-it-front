@@ -216,7 +216,7 @@ function Profile() {
             </div>
             {showAvatarModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="relative w-full max-w-md p-6 bg-white shadow-xl rounded-xl">
+                    <div className="relative w-full max-w-md p-6 shadow-xl bg-thirdary rounded-xl">
                     <h2 className="mb-4 text-xl font-bold text-center text-primary">Choisissez un avatar</h2>
                     <div className="grid grid-cols-4 gap-4 overflow-y-auto max-h-64">
                         {avatars.map((avatar) => (
@@ -244,7 +244,7 @@ function Profile() {
 
             {showFriendsModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="relative w-full max-w-md p-6 bg-white shadow-xl rounded-xl">
+                    <div className="relative w-full max-w-md p-6 shadow-xl bg-thirdary rounded-xl">
                         <h2 className="mb-4 text-xl font-bold text-center text-primary">Demandes d'amis</h2>
                         <div className="mb-4">
                             {friendRequests.length > 0 ? (
@@ -282,14 +282,14 @@ function Profile() {
                             <p className="mb-2 text-center text-secondary">Impossible d'envoyer la demande pour ce pseudo</p>
                         )}
                         {requestResponse === RequestResponseEnum.ACCEPTED && (
-                            <p className="mb-2 text-center text-green">Demande d'amis envoyer !</p>
+                            <p className="mb-2 text-center text-secondary">Demande d'amis envoyer !</p>
                         )}
                         <div className="flex items-center justify-between">
                             <input
                                 type="text"
                                 onChange={(e) => setNewRequest(e.target.value)}
                                 placeholder="Entrez un pseudo"
-                                className="w-2/3 p-2 border rounded-md"
+                                className="w-2/3 p-2 mr-2 border rounded-md"
                             />
                             <Button
                                 variant="primary"
