@@ -10,4 +10,20 @@ export class FriendsService {
             return [];
         }
     }
+
+    static async getRequests(): Promise<Profile[]> {
+        return Api.get('/amis/demande');
+    }
+
+    static async answerRequest(idDemandeur: string, action: string) {
+        return Api.post('/amis/demande', { idDemandeur, action });
+    }
+
+    static async sendRequest(pseudoProfileReceveur: string) {
+        return Api.post('/amis', { pseudoProfileReceveur });
+    }
+
+    static async deleteFriend(idAmi: string) {
+        return Api.delete('/amis', { idAmi });
+    }
 }

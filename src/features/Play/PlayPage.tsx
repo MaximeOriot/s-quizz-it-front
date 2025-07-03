@@ -7,30 +7,50 @@ import { getAuthenticatedUserThunk } from '../auth/authThunks';
 import { fetchQuestionsThunk, prepareSoloGameQuestionThunk } from '../Game/gameThunks';
 import { prepareSoloGame } from '../Game/gameSlice';
 import Button from '../../components/ui/Button';
-import type { AppDispatch } from '../../store/types';
+import type { RootState, AppDispatch } from '../../store';
 
 function PlayPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { user, isAuthenticated, loading } = useSelector((state: any) => state.auth);
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     
     // Si on n'a pas de données utilisateur en state mais qu'on a un token
     if (!user && !isAuthenticated && token) {
-      dispatch(getAuthenticatedUserThunk());
+      dispatch(getAuthenticatedUserThunk())
+        .unwrap()
+        .catch(() => {
+          console.log('Token invalide ou expiré, nettoyage du localStorage');
+          // Nettoyer le localStorage si l'authentification échoue
+          localStorage.removeItem('token');
+          localStorage.removeItem('username');
+        });
     }
     
     // Si on n'a pas de token, l'utilisateur est en mode invité
     if (!token) {
       console.log('Utilisateur en mode invité');
-      // Optionnel: vous pouvez définir un état pour gérer le mode invité
+      // Nettoyer le nom d'utilisateur si pas de token
+      localStorage.removeItem('username');
     }
   }, [dispatch, user, isAuthenticated]);
 
   const handleSoloGame = async () => {
-    const playerName = localStorage.getItem('username') || 'Joueur';
+    // Récupérer le nom d'utilisateur depuis différentes sources
+    let playerName = localStorage.getItem('username');
+    
+    // Si pas de nom dans localStorage, essayer de le récupérer depuis Redux
+    if (!playerName && user) {
+      playerName = user;
+    }
+    
+    // Si toujours pas de nom, utiliser un nom par défaut pour les invités
+    if (!playerName) {
+      playerName = 'Invité';
+    }
+    
     const gameId = 'solo-' + Date.now(); // Génération d'un ID de jeu unique pour le mode solo
     
     try {
@@ -38,7 +58,7 @@ function PlayPage() {
       dispatch(prepareSoloGame({ playerName, gameId }));
       
       // Attendre que les questions soient récupérées avant de naviguer
-      await dispatch(prepareSoloGameQuestionThunk());
+      await dispatch(fetchQuestionsThunk()).unwrap();
       navigate('/game'); // Redirection vers la page de jeu
     } catch (error) {
       console.error('Erreur lors de la préparation du jeu solo:', error);
@@ -114,7 +134,7 @@ function PlayPage() {
   ];
 
   return (
-    <div className="flex flex-col gap-6 justify-center items-center">
+    <div className="flex flex-col items-center justify-center gap-6">
         <Header />
         <div className="text-center lg:my-6 title">
             Que veux-tu faire ? 

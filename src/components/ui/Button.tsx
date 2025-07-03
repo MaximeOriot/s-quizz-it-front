@@ -2,14 +2,14 @@ import React from 'react';
 
 interface ButtonProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'disabled';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'disabled' | 'thirdary';
   textSize?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   loading?: boolean;
   onClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
   className?: string;
-  width?: 'full' | 'auto' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl';
+  width?: 'full' | 'auto' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl';
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -32,6 +32,7 @@ const Button: React.FC<ButtonProps> = ({
     ghost: 'text-blue-600 hover:bg-blue-50 focus:ring-blue-500',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
     disabled: 'bg-gray-300 text-gray-600 hover:bg-gray-300 focus:ring-gray-400',
+    thirdary: 'bg-thirdary text-primary hover:bg-secondary-foreground focus:ring-secondary-foreground',
   };
   
   const textSizeClasses = {
@@ -43,6 +44,7 @@ const Button: React.FC<ButtonProps> = ({
   const widthClasses = {
     full: 'w-full',
     auto: 'w-auto',
+    xl: 'w-24',
     '2xl': 'w-32',
     '3xl': 'w-40',
     '4xl': 'w-48',

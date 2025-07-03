@@ -1,260 +1,43 @@
-import { useSelector, useDispatch } from "react-redux";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useSelector } from "react-redux";
+import { useEffect } from "react";
 import Header from "../../components/ui/Header";
-import { useGameWebSocket } from "./hooks";
-import { setQuestions } from "./gameSlice";
-
-// Types pour le state Redux
-interface RootState {
-  auth: {
-    isAuthenticated: boolean;
-    user: string | null;
-  };
-  game: {
-    questions: Array<{
-      id: string;
-      label: string;
-      reponses: Array<{
-        id: string;
-        label: string;
-        isCorrect?: boolean;
-      }>;
-    }>;
-    playerName: string | null;
-    gameId: string | null;
-    isGameStarted: boolean;
-    gameType: 'SOLO' | 'MULTIPLAYER' | 'CATEGORY' | 'FRIENDS' | 'NONE';
-  };
-}
-
-// Types pour les messages WebSocket
-interface WebSocketMessage {
-  type: string;
-  payload: Record<string, unknown>;
-}
-
-interface PlayerAnswer {
-  playerId: string;
-  playerName: string;
-  questionIndex: number;
-  answerIndex: number;
-  timeToAnswer: number;
-}
+import type { RootState } from './types/game.types';
+import { useGameLogic } from './hooks/useGameLogic.hook';
+import { getAnswerButtonClass } from './utils/gameStyles.utils';
 
 export default function GamePage() {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const [searchParams] = useSearchParams();
-  const roomId = searchParams.get('roomId');
-  
-  // Déterminer le type de jeu
-  const isMultiplayer = roomId !== null;
-  
-  // État local du composant
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(20);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [isAnswering, setIsAnswering] = useState(false);
-  
-  // États pour le multijoueur (collecte de scores uniquement)
-  const [playersScores, setPlayersScores] = useState<{[key: string]: number}>({});
-  
-  // Refs
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const timeLeftRef = useRef(20);
-  const selectedAnswerRef = useRef<number | null>(null);
-
   // Sélecteurs Redux
   const { user } = useSelector((state: RootState) => state.auth);
-  const { questions, playerName, isGameStarted, gameId } = useSelector((state: RootState) => state.game);
+  const { questions, playerName, isGameStarted, gameId, gameType } = useSelector((state: RootState) => state.game);
 
-  // Charger les questions en mode multijoueur si elles ne sont pas encore chargées
-  useEffect(() => {
-    if (isMultiplayer && (!questions || questions.length === 0)) {
-      console.log('🎮 Mode multijoueur: Chargement des questions...');
-      // En mode multijoueur, on attend que le serveur envoie les questions via WebSocket
-      // ou on peut les charger depuis l'API
-      fetch('https://backend-squizzit.dreadex.dev/api/normal/aleatoire/question?niveauDifficulte=2')
-        .then(response => response.json())
-        .then(data => {
-          console.log('🎮 Questions chargées pour le multijoueur:', data);
-          // Dispatch les questions dans le store Redux
-          dispatch(setQuestions(data));
-        })
-        .catch(error => {
-          console.error('Erreur lors du chargement des questions:', error);
-        });
-    }
-  }, [isMultiplayer, questions]);
-
-  // WebSocket partagé pour le multijoueur (collecte de scores uniquement)
-  const { socket } = useGameWebSocket({
-    gameId: isMultiplayer ? roomId : gameId,
-    onNextQuestion: (questionIndex, scores) => {
-      setCurrentQuestionIndex(questionIndex);
-      setTimeLeft(20);
-      setSelectedAnswer(null);
-      setIsAnswering(false);
-      setPlayersScores(scores);
-    },
-    onGameEnd: (finalScores) => {
-      navigate('/results', { 
-        state: { 
-          score, 
-          totalQuestions: questions.length,
-          playersScores: finalScores,
-          isMultiplayer: true
-        } 
-      });
-    }
+  const { gameState, handleAnswerClick, startTimer } = useGameLogic({
+    questions,
+    gameType,
+    gameId,
+    user,
+    playerName
   });
 
-  const sendGameMessage = (message: WebSocketMessage) => {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(message));
-    }
-  };
-
-  // Mettre à jour les refs quand les states changent
+  // Démarrer le timer au montage du composant
   useEffect(() => {
-    timeLeftRef.current = timeLeft;
-  }, [timeLeft]);
-
-  useEffect(() => {
-    selectedAnswerRef.current = selectedAnswer;
-  }, [selectedAnswer]);
-
-  // Fonction pour nettoyer le timer
-  const clearTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+    if (isGameStarted && questions && questions.length > 0) {
+      startTimer();
     }
-  }, []);
-
-  // Gestion du passage à la question suivante
-  const handleNextQuestion = useCallback(() => {
-    if (isAnswering) return;
-    
-    setIsAnswering(true);
-    clearTimer();
-    
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      setTimeLeft(20);
-      setSelectedAnswer(null);
-      setIsAnswering(false);
-    } else {
-      // Fin du jeu
-      if (isMultiplayer) {
-        // En multijoueur, envoyer le score final au serveur
-        sendGameMessage({
-          type: 'game_completed',
-          payload: {
-            playerId: user || playerName || 'unknown',
-            playerName: playerName || 'Joueur',
-            finalScore: score,
-            totalQuestions: questions.length
-          }
-        });
-        
-        // Attendre la réponse du serveur pour les scores finaux
-        // La navigation se fera via onGameEnd du WebSocket
-      } else {
-        // Mode solo : naviguer directement vers les résultats
-        navigate('/results', { state: { score, totalQuestions: questions.length } });
-      }
-    }
-  }, [currentQuestionIndex, questions.length, navigate, score, clearTimer, isAnswering, isMultiplayer, user, playerName, sendGameMessage]);
-
-  // Timer pour chaque question
-  useEffect(() => {
-    clearTimer();
-    
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prevTime) => {
-        const newTime = prevTime - 1;
-        
-        if (newTime <= 0 && selectedAnswerRef.current === null) {
-          clearTimer();
-          
-          // Temps écoulé sans réponse
-          setTimeout(() => {
-            handleNextQuestion();
-          }, 0);
-          return 0;
-        }
-        
-        return newTime;
-      });
-    }, 1000);
-
-    return () => {
-      clearTimer();
-    };
-  }, [currentQuestionIndex, clearTimer, handleNextQuestion]);
-
-  // Fonction pour envoyer la réponse du joueur
-  const sendPlayerAnswer = (answerIndex: number) => {
-    if (isMultiplayer) {
-      const playerAnswer: PlayerAnswer = {
-        playerId: user || playerName || 'unknown',
-        playerName: playerName || 'Joueur',
-        questionIndex: currentQuestionIndex,
-        answerIndex: answerIndex,
-        timeToAnswer: 20 - timeLeft
-      };
-      
-      sendGameMessage({
-        type: 'player_answer',
-        payload: playerAnswer as unknown as Record<string, unknown>
-      });
-    }
-  };
-
-  // Gestion du clic sur une réponse
-  const handleAnswerClick = (answerIndex: number) => {
-    if (selectedAnswer !== null || isAnswering) return;
-
-    clearTimer();
-    setSelectedAnswer(answerIndex);
-    
-    // Vérifier si la réponse est correcte
-    const currentQuestion = questions[currentQuestionIndex];
-    if (currentQuestion.reponses[answerIndex].isCorrect) {
-      setScore(prev => prev + 1);
-    }
-
-    if (isMultiplayer) {
-      // Envoyer la réponse au serveur
-      sendPlayerAnswer(answerIndex);
-    }
-    
-    // Passer à la question suivante après un délai
-    setTimeout(() => {
-      handleNextQuestion();
-    }, 1500);
-  };
-
-  // Cleanup au démontage du composant
-  useEffect(() => {
-    return () => {
-      clearTimer();
-    };
-  }, [clearTimer]);
+  }, [isGameStarted, startTimer, gameState.currentQuestionIndex, questions]);
 
   // Affichage de chargement
-  if (!questions || questions.length === 0 || (!isGameStarted && !isMultiplayer)) {
+  if (!questions || questions.length === 0 || !isGameStarted) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p>Chargement des questions...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 mx-auto mb-4 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+          <p>Chargement des questions...</p>
+        </div>
       </div>
     );
   }
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestion = questions[gameState.currentQuestionIndex];
 
   return (
     <div className="min-h-screen">
@@ -263,19 +46,19 @@ export default function GamePage() {
       <div className="container px-4 py-8 mx-auto">
         {/* En-tête de la question */}
         <div className="p-6 mb-6 rounded-lg shadow-md bg-secondary">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-primary">
-              Question {currentQuestionIndex + 1} / {questions.length}
+              Question {gameState.currentQuestionIndex + 1} / {questions.length}
             </h2>
-            <div className="flex gap-4 items-center">
-              <span className="text-sm text-primary">Score: {score}</span>
-              {isMultiplayer && (
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-primary">Score: {gameState.score}</span>
+              {gameType === 'MULTIPLAYER' && (
                 <span className="text-sm text-primary">
-                  Salle: {roomId}
+                  Joueurs: {gameState.totalPlayers}
                 </span>
               )}
-              <span className={`text-lg font-bold ${timeLeft <= 5 ? 'text-red-500' : 'text-blue-400'}`}>
-                {timeLeft}s
+              <span className={`text-lg font-bold ${gameState.timeLeft <= 5 ? 'text-red-500' : 'text-blue-400'}`}>
+                {gameState.timeLeft}s
               </span>
             </div>
           </div>
@@ -283,11 +66,35 @@ export default function GamePage() {
           {/* Barre de progression */}
           <div className="w-full h-2 rounded-full bg-primary">
             <div 
-              className="h-2 bg-blue-400 rounded-full transition-all duration-1000"
-              style={{ width: `${(timeLeft / 20) * 100}%` }}
+              className="h-2 transition-all duration-1000 bg-blue-400 rounded-full"
+              style={{ width: `${(gameState.timeLeft / 20) * 100}%` }}
             ></div>
           </div>
         </div>
+
+        {/* Indicateur d'attente multijoueur */}
+        {gameState.waitingForPlayers && gameType === 'MULTIPLAYER' && (
+          <div className="p-4 mb-6 text-center bg-yellow-100 border border-yellow-400 rounded-lg">
+            <p className="text-yellow-800">
+              En attente des autres joueurs... ({gameState.playersAnswered.length}/{gameState.totalPlayers})
+            </p>
+            <div className="flex justify-center mt-2">
+              <div className="w-6 h-6 border-b-2 border-yellow-800 rounded-full animate-spin"></div>
+            </div>
+          </div>
+        )}
+
+        {/* Indicateur de vérification en cours */}
+        {gameState.answerStatus === 'pending' && (
+          <div className="p-4 mb-6 text-center bg-gray-100 border border-gray-300 rounded-lg">
+            <p className="text-gray-700">
+              Vérification de votre réponse...
+            </p>
+            <div className="flex justify-center mt-2">
+              <div className="w-4 h-4 border-b-2 border-gray-600 rounded-full animate-spin"></div>
+            </div>
+          </div>
+        )}
 
         {/* Question */}
         <div className="p-6 mb-6 rounded-lg shadow-md bg-secondary-foreground">
@@ -299,33 +106,34 @@ export default function GamePage() {
               <button
                 key={reponse.id}
                 onClick={() => handleAnswerClick(index)}
-                disabled={selectedAnswer !== null || isAnswering}
-                className={`
-                  p-4 text-left rounded-lg border-2 transition-all duration-200
-                  ${selectedAnswer === index 
-                    ? reponse.isCorrect 
-                      ? 'bg-green-500 text-white border-green-500' 
-                      : 'bg-red-500 text-white border-red-500'
-                    : selectedAnswer !== null && reponse.isCorrect
-                      ? 'bg-green-100 border-green-500'
-                      : 'text-primary bg-secondary border-secondary-foreground hover:bg-secondary-foreground'
-                  }
-                  ${selectedAnswer !== null || isAnswering ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-blue-300'}
-                `}
+                disabled={gameState.selectedAnswer !== null || gameState.isAnswering || gameState.waitingForPlayers}
+                className={getAnswerButtonClass(
+                  index,
+                  gameState.selectedAnswer,
+                  gameState.answerStatus,
+                  gameState.correctAnswerIndex,
+                  gameState.isAnswering,
+                  gameState.waitingForPlayers
+                )}
               >
                 <span className="font-medium">{String.fromCharCode(65 + index)}.</span>
                 <span className="ml-2">{reponse.label}</span>
+                {gameState.selectedAnswer === index && gameState.answerStatus === 'pending' && (
+                  <span className="ml-2">
+                    <div className="inline-block w-4 h-4 border-b-2 border-gray-600 rounded-full animate-spin"></div>
+                  </span>
+                )}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Scores des autres joueurs (multijoueur) */}
-        {isMultiplayer && Object.keys(playersScores).length > 0 && (
+        {/* Scores des autres joueurs (multijoueur uniquement) */}
+        {gameType === 'MULTIPLAYER' && Object.keys(gameState.playersScores).length > 0 && (
           <div className="p-4 bg-gray-100 rounded-lg">
             <h4 className="mb-2 font-bold">Scores actuels :</h4>
             <div className="grid grid-cols-2 gap-2">
-              {Object.entries(playersScores).map(([playerName, score]) => (
+              {Object.entries(gameState.playersScores).map(([playerName, score]) => (
                 <div key={playerName} className="flex justify-between">
                   <span>{playerName}</span>
                   <span className="font-bold">{score}</span>

@@ -5,6 +5,9 @@ import ScorePage from "../features/Score/ScorePage";
 import WaitingRoom from "../features/Waiting/WaitingRoom";
 import GamePage from "../features/Game/GamePage";
 import GlobalRoomPage from "../features/GlobalRoom/GlobalRoomPage";
+import Profile from "../features/Profile/Profile";
+import ProtectedRoute from "./ProtectedRoute";
+import ResultsPage from "../features/Game/ResultsPage";
 import ProfileComponent from "../features/Profile/Profile";
 import ResultsPage from "../features/Results/ResultsPage";
 
@@ -34,6 +37,17 @@ export const router = createBrowserRouter([
         element: <GlobalRoomPage />,
     },
     {
+        path: '/profile',
+        element: <Profile />
+    },
+    {
+        path: '/results',
+        element: <ResultsPage />
+    },
+    {
+        path: '*',
+        element: <ProtectedRoute fallback={<HomePage />} />,
+    },
         path: '/results',
         element: <ResultsPage />
     }
