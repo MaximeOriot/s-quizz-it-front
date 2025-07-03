@@ -3,7 +3,6 @@ import logo from '../../assets/logo-squizzit-removed-bg.png';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../../features/auth/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import { usePlayerContext } from '../../contexts/usePlayerContext';
 
 interface RootState {
   auth: {
@@ -16,29 +15,10 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
-  const { playerName } = usePlayerContext();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-  console.log(user);
-
-  // Extraire le nom d'utilisateur de l'objet user
-  const getUserName = (user: RootState['auth']['user']): string => {
-  console.log(user);
-    if (!user) return 'Invité';
-    
-    // Si c'est une chaîne, l'utiliser directement
-    if (typeof user === 'string') return user;
-    
-    // Si c'est un objet, essayer d'extraire le nom
-    if (typeof user === 'object') {
-      // Essayer différents champs possibles
-      return user.name ?? user.username ?? user.display_name ?? 'Invité';
-    }
-    
-    return 'Invité';
-  };
 
   // Utiliser le prop playerName s'il est fourni, sinon utiliser localStorage, puis Redux
-  const displayName = playerName ?? localStorage.getItem('username') ?? getUserName(user) ?? 'Invité';
+  const displayName = user
 
   // Vérifier si l'utilisateur est connecté
   const isUserConnected = isAuthenticated;

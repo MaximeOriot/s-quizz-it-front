@@ -3,7 +3,6 @@ import { useDispatch } from 'react-redux';
 import { loginThunk, registerThunk } from '../features/auth/authThunks';
 import { useNavigate } from "react-router-dom";
 import Button from "./ui/Button";
-import { useSelector } from "react-redux";
 
 type AuthModalProps = {
   isOpen: boolean;
@@ -14,15 +13,13 @@ type AuthModalProps = {
 
 export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess }: AuthModalProps) {
   const [isOnRegister, setIsOnRegister] = useState(isRegister);
-  const user = useSelector((state: RootState) => state.auth.user);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
-  
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [username, setUsername] = useState('');
-    const [confirmationPassword, setConfirmationPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [confirmationPassword, setConfirmationPassword] = useState('');
   
 
   useEffect(() => {

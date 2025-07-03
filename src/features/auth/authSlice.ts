@@ -32,7 +32,7 @@ const authSlice = createSlice({
     loginSuccess: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.isAuthenticated = true;
-      state.user = action.payload;
+      state.user = action.payload.pseudo;
       state.email = null;
       state.password = null;
     },
