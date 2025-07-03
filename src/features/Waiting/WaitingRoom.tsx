@@ -22,6 +22,7 @@ function WaitingRoom() {
     rooms, 
     currentRoom, 
     roomLoading, 
+    error,
     setPlayerReady,
     refreshRooms,
     sendWebSocketMessage
@@ -42,11 +43,17 @@ function WaitingRoom() {
       const timeout = setTimeout(() => {
         console.warn('⚠️ Timeout de sécurité: Chargement de la salle depuis plus de 30 secondes');
         console.warn('⚠️ État actuel:', { isConnected, hasReceivedData, roomLoading, currentRoom });
+        
+        // Si on est toujours en chargement après 30 secondes, essayer de se reconnecter
+        if (roomId) {
+          console.log('🔄 Tentative de reconnexion après timeout...');
+          sendWebSocketMessage(`connect-${roomId}`);
+        }
       }, 30000); // 30 secondes
 
       return () => clearTimeout(timeout);
     }
-  }, [roomLoading, isConnected, hasReceivedData, currentRoom]);
+  }, [roomLoading, isConnected, hasReceivedData, currentRoom, roomId, sendWebSocketMessage]);
 
   // Effet pour demander périodiquement les données mises à jour
   useEffect(() => {
@@ -55,6 +62,14 @@ function WaitingRoom() {
         console.log('🔄 Demande périodique des données mises à jour...');
         sendWebSocketMessage(`get_players-${roomId}`);
         sendWebSocketMessage(`get_salon_info-${roomId}`);
+        
+        // Log des données actuelles pour debug
+        console.log('🎮 État actuel de la salle:', {
+          roomId,
+          players: currentRoom.players,
+          readyPlayers: currentRoom.players?.filter(p => p.isReady).length,
+          totalPlayers: currentRoom.players?.length
+        });
         
         // Vérifier si le jeu a commencé en regardant l'URL
         if (window.location.pathname === '/waitingRoom' && window.location.search.includes('roomId=')) {
@@ -241,6 +256,32 @@ function WaitingRoom() {
             </Button>
           </div>
         </div>
+      ) : error ? (
+        <div className="flex flex-col flex-1 gap-4 justify-center items-center">
+          <div className="text-center">
+            <h2 className="mb-4 text-xl font-semibold text-red-500">Erreur de connexion</h2>
+            <p className="mb-4 text-secondary">{error}</p>
+            <div className="flex gap-4">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  console.log('🔄 Tentative de reconnexion...');
+                  if (roomId) {
+                    sendWebSocketMessage(`connect-${roomId}`);
+                  }
+                }}
+              >
+                Réessayer
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => window.location.href = '/globalRoom'}
+              >
+                Retour aux salles
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="flex flex-row flex-1 gap-10 mt-6">
           <div className="w-1/2">
@@ -307,12 +348,19 @@ function WaitingRoom() {
                       <span className={`text-secondary ${player.id === currentPlayerId ? 'font-bold' : ''}`}>
                         {player.id === currentPlayerId ? `${player.pseudo} (Vous)` : player.pseudo}
                       </span>
-                      <input
-                        type="checkbox"
-                        checked={playerIsReady}
-                        readOnly
-                        className="ml-2 w-4 h-4 accent-thirdary"
-                      />
+                      <div className="flex items-center ml-2">
+                        <input
+                          type="checkbox"
+                          checked={playerIsReady}
+                          readOnly
+                          className="w-4 h-4 accent-thirdary"
+                        />
+                        {playerIsReady && (
+                          <span className="ml-1 text-xs font-semibold text-green-500">
+                            ✅ Prêt
+                          </span>
+                        )}
+                      </div>
                     </li>
                   );
                 })}
@@ -376,6 +424,29 @@ function WaitingRoom() {
                 className="text-white bg-blue-500 hover:bg-blue-600"
               >
                 🔄 Force Update Room Data
+              </Button>
+              
+              {/* Bouton de debug pour afficher l'état actuel */}
+              <Button
+                variant="secondary"
+                textSize="sm"
+                width="6xl"
+                onClick={() => {
+                  console.log('🎮 État actuel de la salle (debug):', {
+                    roomId,
+                    currentRoom,
+                    roomInfo,
+                    currentPlayer,
+                    currentPlayerId,
+                    isReady,
+                    readyPlayers,
+                    allPlayersReady,
+                    localIsReady
+                  });
+                }}
+                className="text-white bg-green-500 hover:bg-green-600"
+              >
+                🔍 Debug State
               </Button>
             </div>
           </div>

@@ -202,7 +202,7 @@ export const useGameLogic = ({ questions, gameType, gameId, user, playerName }: 
       const requestData: VerifyAnswerRequest = {
         idQuestion: parseInt(currentQuestion.id),
         idReponse: parseInt(selectedResponse.id),
-        idJoueur: parseInt(user || playerName || '0'),
+        idJoueur: user.id || playerName || '0',
         tempsReponse: 20 - timeLeft,
         type: "qcm",
         reponseJoueur: selectedResponse.label
