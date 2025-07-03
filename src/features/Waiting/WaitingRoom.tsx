@@ -112,46 +112,6 @@ function WaitingRoom() {
     setPlayerReady();
   };
 
-  // Debug: afficher les données des joueurs
-  console.log('Current room players:', currentRoom?.players);
-  console.log('Current player:', currentPlayer);
-  console.log('Is ready:', isReady);
-  console.log('userId:', userId);
-  console.log('currentPlayerId:', currentPlayerId);
-  console.log('Player IDs in room:', currentRoom?.players?.map(p => p.id));
-  console.log('Looking for userId:', currentPlayerId);
-  console.log('User profile:', userProfile);
-
-  // Fonction de test pour simuler la réponse du backend
-  const testBackendResponse = () => {
-    console.log('🧪 Test: Simulation de la réponse du backend');
-    
-    // Afficher les données utilisateur stockées
-    const userId = localStorage.getItem('userId');
-    const userProfile = localStorage.getItem('userProfile');
-    const token = localStorage.getItem('token');
-    
-    console.log('🧪 Données utilisateur stockées:');
-    console.log('  - userId:', userId);
-    console.log('  - userProfile:', userProfile);
-    console.log('  - token:', token ? 'Présent' : 'Absent');
-    
-    if (userProfile) {
-      try {
-        const profile = JSON.parse(userProfile);
-        console.log('  - profile parsé:', profile);
-      } catch (error) {
-        console.error('  - Erreur parsing profile:', error);
-      }
-    }
-    
-    // Simuler l'envoi du statut ready avec le format simple
-    if (roomId) {
-      console.log('🧪 Envoi du message ready-{roomId}...');
-      sendWebSocketMessage(`ready-${roomId}`);
-    }
-  };
-
   // Fonction pour forcer la mise à jour des données de la salle
   const forceUpdateRoomData = () => {
     console.log('🔄 Force mise à jour des données de la salle...');
@@ -298,27 +258,6 @@ function WaitingRoom() {
                 }}
               >
                 Actualiser la liste des salles
-              </Button>
-              
-              {/* Boutons de test pour le développement */}
-              <Button
-                variant="secondary"
-                textSize="sm"
-                width="6xl"
-                onClick={testBackendResponse}
-                className="text-white bg-yellow-500 hover:bg-yellow-600"
-              >
-                🧪 Test Backend Response
-              </Button>
-              
-              <Button
-                variant="secondary"
-                textSize="sm"
-                width="6xl"
-                onClick={forceUpdateRoomData}
-                className="text-white bg-blue-500 hover:bg-blue-600"
-              >
-                🔄 Force Update Room Data
               </Button>
             </div>
           </div>
