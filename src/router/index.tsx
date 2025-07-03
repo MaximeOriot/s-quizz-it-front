@@ -9,7 +9,6 @@ import Profile from "../features/Profile/Profile";
 import ProtectedRoute from "./ProtectedRoute";
 import ResultsPage from "../features/Game/ResultsPage";
 import ProfileComponent from "../features/Profile/Profile";
-import ResultsPage from "../features/Results/ResultsPage";
 
 export const router = createBrowserRouter([
     {
@@ -48,6 +47,7 @@ export const router = createBrowserRouter([
         path: '*',
         element: <ProtectedRoute fallback={<HomePage />} />,
     },
+    {
         path: '/results',
         element: <ResultsPage />
     }
