@@ -22,7 +22,6 @@ function WaitingRoom() {
     rooms, 
     currentRoom, 
     roomLoading, 
-    allPlayersReady,
     setPlayerReady,
     refreshRooms,
     sendWebSocketMessage
@@ -55,11 +54,21 @@ function WaitingRoom() {
       const interval = setInterval(() => {
         console.log('🔄 Demande périodique des données mises à jour...');
         sendWebSocketMessage(`get_players-${roomId}`);
-      }, 5000); // Toutes les 5 secondes
+        
+        // Vérifier si le jeu a commencé en regardant l'URL
+        if (window.location.pathname === '/waitingRoom' && window.location.search.includes('roomId=')) {
+          // Si on est encore dans la salle d'attente, vérifier si le jeu a commencé
+          // en regardant si la salle a changé de statut
+          if (roomInfo?.commence) {
+            console.log('🎮 Détection automatique: Le jeu a commencé ! Redirection...');
+            window.location.href = `/game?roomId=${roomId}`;
+          }
+        }
+      }, 3000); // Toutes les 3 secondes pour une réponse plus rapide
 
       return () => clearInterval(interval);
     }
-  }, [roomId, isConnected, currentRoom, sendWebSocketMessage]);
+  }, [roomId, isConnected, currentRoom, sendWebSocketMessage, roomInfo]);
 
   // Récupérer l'id du joueur courant depuis localStorage (défini à la connexion WebSocket)
   const userId = localStorage.getItem('userId');
@@ -93,7 +102,13 @@ function WaitingRoom() {
   const isReady = currentPlayer ? currentPlayer.isReady : localIsReady;
   const actualTotalPlayers = currentRoom?.players.length || 0;
   const maxPlayers = roomInfo?.j_max || 10;
+  
+  // Compter seulement les joueurs qui sont vraiment prêts
+  const readyPlayers = currentRoom?.players?.filter(player => player.isReady === true).length || 0;
   const missingPlayers = Math.max(0, maxPlayers - actualTotalPlayers);
+  
+  // Tous les joueurs sont prêts seulement si tous les joueurs présents sont prêts ET qu'il y a au moins 2 joueurs
+  const allPlayersReady = readyPlayers > 0 && readyPlayers === actualTotalPlayers && actualTotalPlayers >= 2;
 
   const getLoadingMessage = () => {
     if (!isConnected) {
@@ -120,6 +135,31 @@ function WaitingRoom() {
       sendWebSocketMessage(`get_players-${roomId}`);
     }
   };
+
+  // Fonction pour lancer le jeu
+  const startGame = () => {
+    console.log('🎮 Lancement du jeu...');
+    if (roomId) {
+      // Envoyer le message au serveur
+      sendWebSocketMessage(`start-${roomId}`);
+      
+      // Envoyer un message broadcast pour tous les joueurs de la salle
+      sendWebSocketMessage(`broadcast_game_start-${roomId}`);
+      
+      // Redirection immédiate pour le joueur qui lance
+      console.log('🔄 Redirection immédiate vers la page de jeu...');
+      window.location.href = `/game?roomId=${roomId}`;
+    }
+  };
+
+  // Logs de debug
+  console.log('Current room players:', currentRoom?.players);
+  console.log('Current player:', currentPlayer);
+  console.log('Is ready:', isReady);
+  console.log('currentPlayerId:', currentPlayerId);
+  console.log('Player IDs in room:', currentRoom?.players?.map(p => p.id));
+  console.log('Ready players count:', readyPlayers);
+  console.log('All players ready:', allPlayersReady);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -181,6 +221,11 @@ function WaitingRoom() {
                   <span className="font-semibold">{actualTotalPlayers}</span>
                   <span className="mx-1">/</span>
                   <span>{maxPlayers} joueurs</span>
+                  {readyPlayers > 0 && (
+                    <span className="ml-2 text-green-500">
+                      ({readyPlayers} prêt{readyPlayers > 1 ? 's' : ''})
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -229,9 +274,20 @@ function WaitingRoom() {
 
             {allPlayersReady ? (
               <div className="p-4 mt-6 bg-green-100 rounded-lg border border-green-400">
-                <p className="font-semibold text-center text-green-800">
+                <p className="mb-4 font-semibold text-center text-green-800">
                   🎉 Tous les joueurs sont prêts ! Le jeu peut commencer.
                 </p>
+                <div className="text-center">
+                  <Button
+                    variant="primary"
+                    textSize="lg"
+                    width="6xl"
+                    onClick={startGame}
+                    className="text-white bg-green-600 hover:bg-green-700"
+                  >
+                    🎮 Lancer le jeu
+                  </Button>
+                </div>
               </div>
             ) : (
               <p className="mt-6 text-sm text-secondary">
@@ -258,6 +314,17 @@ function WaitingRoom() {
                 }}
               >
                 Actualiser la liste des salles
+              </Button>
+              
+              {/* Bouton de debug pour forcer la mise à jour */}
+              <Button
+                variant="secondary"
+                textSize="sm"
+                width="6xl"
+                onClick={forceUpdateRoomData}
+                className="text-white bg-blue-500 hover:bg-blue-600"
+              >
+                🔄 Force Update Room Data
               </Button>
             </div>
           </div>
