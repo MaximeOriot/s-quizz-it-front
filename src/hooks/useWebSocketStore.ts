@@ -699,7 +699,7 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
   }, [sendWebSocketMessage]);
 
   const createQuickRoom = useCallback(() => {
-    sendWebSocketMessage('rapide');
+    sendWebSocketMessage('normal');
   }, [sendWebSocketMessage]);
 
   const setPlayerReady = useCallback(() => {
