@@ -50,7 +50,7 @@ function GlobalRoom() {
     <div className="flex flex-col min-h-screen">
        <Header /> 
             
-      <div className="flex flex-col gap-6 items-center p-4">
+      <div className="flex flex-col items-center gap-6 p-4">
         <div className="text-center">
           <h1 className="mb-2 text-3xl font-bold text-foreground">
             Salles Globales
@@ -80,7 +80,7 @@ function GlobalRoom() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 w-full max-w-6xl md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid w-full max-w-6xl grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {rooms.map((room) => (
                 <RoomCard key={room.id} room={room} />
               ))}
