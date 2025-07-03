@@ -54,9 +54,27 @@ function WaitingRoom() {
       const interval = setInterval(() => {
         console.log('🔄 Demande périodique des données mises à jour...');
         sendWebSocketMessage(`get_players-${roomId}`);
+        sendWebSocketMessage(`get_salon_info-${roomId}`);
         
         // Vérifier si le jeu a commencé en regardant l'URL
         if (window.location.pathname === '/waitingRoom' && window.location.search.includes('roomId=')) {
+          // Vérifier si le jeu a commencé via localStorage (méthode de secours)
+          const gameStartedTime = localStorage.getItem(`game_started_${roomId}`);
+          if (gameStartedTime) {
+            const startTime = parseInt(gameStartedTime);
+            const now = Date.now();
+            // Si le jeu a commencé il y a moins de 30 secondes, rediriger
+            if (now - startTime < 30000) {
+              console.log('🎮 Détection localStorage: Le jeu a commencé ! Redirection...');
+              localStorage.removeItem(`game_started_${roomId}`); // Nettoyer
+              window.location.href = `/game?roomId=${roomId}`;
+              return;
+            } else {
+              // Nettoyer si trop ancien
+              localStorage.removeItem(`game_started_${roomId}`);
+            }
+          }
+          
           // Si on est encore dans la salle d'attente, vérifier si le jeu a commencé
           // en regardant si la salle a changé de statut
           if (roomInfo?.commence) {
@@ -64,7 +82,7 @@ function WaitingRoom() {
             window.location.href = `/game?roomId=${roomId}`;
           }
         }
-      }, 3000); // Toutes les 3 secondes pour une réponse plus rapide
+      }, 2000); // Toutes les 2 secondes pour une réponse encore plus rapide
 
       return () => clearInterval(interval);
     }
@@ -91,12 +109,30 @@ function WaitingRoom() {
   // État local pour le statut "prêt" (optimiste)
   const [localIsReady, setLocalIsReady] = useState(false);
   
+  // État pour suivre les joueurs précédents
+  const [previousPlayerCount, setPreviousPlayerCount] = useState(0);
+  
   // Synchroniser l'état local avec les données du serveur
   useEffect(() => {
     if (currentPlayer) {
       setLocalIsReady(currentPlayer.isReady);
     }
   }, [currentPlayer]);
+  
+  // Détecter si des joueurs ont quitté (peut indiquer qu'ils sont partis jouer)
+  useEffect(() => {
+    if (currentRoom?.players && previousPlayerCount > 0 && currentRoom.players.length < previousPlayerCount) {
+      console.log('🎮 Détection: Des joueurs ont quitté la salle, ils sont peut-être partis jouer...');
+      // Attendre un peu puis rediriger
+      setTimeout(() => {
+        if (window.location.pathname === '/waitingRoom') {
+          console.log('🎮 Redirection suite au départ des joueurs...');
+          window.location.href = `/game?roomId=${roomId}`;
+        }
+      }, 2000);
+    }
+    setPreviousPlayerCount(currentRoom?.players?.length || 0);
+  }, [currentRoom?.players, previousPlayerCount, roomId]);
   
   // Déterminer si le joueur est prêt (local ou serveur)
   const isReady = currentPlayer ? currentPlayer.isReady : localIsReady;
@@ -109,6 +145,18 @@ function WaitingRoom() {
   
   // Tous les joueurs sont prêts seulement si tous les joueurs présents sont prêts ET qu'il y a au moins 2 joueurs
   const allPlayersReady = readyPlayers > 0 && readyPlayers === actualTotalPlayers && actualTotalPlayers >= 2;
+  
+  // Effet pour forcer la redirection si tous les joueurs sont prêts depuis trop longtemps
+  useEffect(() => {
+    if (allPlayersReady && window.location.pathname === '/waitingRoom') {
+      const timeout = setTimeout(() => {
+        console.log('🎮 Force redirection: Tous les joueurs prêts depuis 5 secondes...');
+        window.location.href = `/game?roomId=${roomId}`;
+      }, 5000); // 5 secondes après que tous soient prêts
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [allPlayersReady, roomId]);
 
   const getLoadingMessage = () => {
     if (!isConnected) {
@@ -145,6 +193,9 @@ function WaitingRoom() {
       
       // Envoyer un message broadcast pour tous les joueurs de la salle
       sendWebSocketMessage(`broadcast_game_start-${roomId}`);
+      
+      // Marquer dans localStorage que le jeu a commencé pour cette salle
+      localStorage.setItem(`game_started_${roomId}`, Date.now().toString());
       
       // Redirection immédiate pour le joueur qui lance
       console.log('🔄 Redirection immédiate vers la page de jeu...');
