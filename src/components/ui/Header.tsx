@@ -41,7 +41,8 @@ const Header: React.FC = () => {
   const displayName = playerName ?? localStorage.getItem('username') ?? getUserName(user) ?? 'Invité';
 
   // Vérifier si l'utilisateur est connecté
-  const isUserConnected = isAuthenticated || (user !== null && user !== undefined);
+  const isUserConnected = isAuthenticated;
+  const isGuest = user === 'Invité';
 
   const handleLogout = () => {
     // Dispatch logout action
@@ -72,6 +73,14 @@ const Header: React.FC = () => {
             className="px-4 py-2 font-semibold border-b-2 border-secondary text-secondary"
           >
             Se déconnecter
+          </button>
+        )}
+        {isGuest && (
+          <button
+            onClick={() => handleLogout()}
+            className="px-4 py-2 font-semibold border-b-2 border-secondary text-secondary"
+          >
+            Retour à l'accueil
           </button>
         )}
         <div className="text-lg font-semibold">

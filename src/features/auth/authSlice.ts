@@ -52,6 +52,11 @@ const authSlice = createSlice({
       localStorage.removeItem('username');
       console.log('Utilisateur déconnecté, état réinitialisé.');
     },
+    setGuestUser: (state) => {
+      state.user = 'Invité';
+      state.email = '';
+      state.isAuthenticated = false;
+    },
   },
 });
 

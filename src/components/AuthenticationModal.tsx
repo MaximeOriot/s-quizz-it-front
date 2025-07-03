@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { loginThunk, registerThunk } from '../features/auth/authThunks';
 import { useNavigate } from "react-router-dom";
 import Button from "./ui/Button";
+import { useSelector } from "react-redux";
 
 type AuthModalProps = {
   isOpen: boolean;
@@ -13,8 +14,8 @@ type AuthModalProps = {
 
 export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess }: AuthModalProps) {
   const [isOnRegister, setIsOnRegister] = useState(isRegister);
+  const user = useSelector((state: RootState) => state.auth.user);
 
-    const { user, isAuthenticated, loading, error } = useSelector((state: any) => state.auth);
     const dispatch = useDispatch();
     const navigate = useNavigate();
   
@@ -62,6 +63,12 @@ export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess 
         alert('Une erreur est survenue. Veuillez vérifier vos informations.');
       }
     };
+
+  const handleGuestLogin = () => {
+    dispatch({ type: 'auth/setGuestUser'});
+    navigate('/play');
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 backdrop-blur-sm bg-black/50"
@@ -112,6 +119,12 @@ export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess 
             <Button type="submit" variant="primary" className="mt-8">
               Se connecter
             </Button>
+            <button
+            onClick={handleGuestLogin}
+            className="px-4 py-2 font-semibold text-primary-foreground hover:text-primary"
+          >
+            Jouer en tant qu'invité
+          </button>
           </form>
         ) : (
           <form className="flex flex-col gap-4" 
@@ -138,6 +151,12 @@ export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess 
             <Button type="submit" variant="primary" className="mt-8">
               S'inscrire
             </Button>
+            <button
+            onClick={handleGuestLogin}
+            className="px-4 py-2 font-semibold text-primary-foreground hover:text-primary"
+          >
+            Jouer en tant qu'invité
+          </button>
           </form>
         )}
       </div>
