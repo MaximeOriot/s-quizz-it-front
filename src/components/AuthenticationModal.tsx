@@ -56,8 +56,7 @@ export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess 
           // Connexion
           await dispatch(loginThunk({ email, password })).unwrap();
         }
-        
-        navigate('/play');
+        onLoginSuccess();
       } catch (err) {
         console.error(err);
         alert('Une erreur est survenue. Veuillez vérifier vos informations.');
@@ -65,13 +64,13 @@ export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess 
     };
 
   return (
-    <div className="flex fixed inset-0 z-50 justify-center items-center bg-opacity-50 backdrop-blur-sm bg-black/50"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 backdrop-blur-sm bg-black/50"
     onClick={onClose}>
-      <div className="relative p-6 w-full max-w-sm bg-blue-800 rounded-xl shadow-xl"
+      <div className="relative w-full max-w-sm p-6 bg-blue-800 shadow-xl rounded-xl"
       onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-xl text-primary hover:text-primary-foreground"
+          className="absolute text-xl top-2 right-2 text-primary hover:text-primary-foreground"
         >
           ×
         </button>
@@ -102,11 +101,11 @@ export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess 
               handleSubmit();
             })}
           >
-            <input type="email" placeholder="Email" className="py-2 text-center rounded-md border border-purple-700 bg-primary-foreground placeholder-secondary" 
+            <input type="email" placeholder="Email" className="py-2 text-center border border-purple-700 rounded-md bg-primary-foreground placeholder-secondary" 
               onChange={(e) => setEmail(e.target.value)}
               value={email}
             />
-            <input type="password" placeholder="Mot de passe" className="py-2 text-center rounded-md border border-purple-700 bg-primary-foreground placeholder-secondary" 
+            <input type="password" placeholder="Mot de passe" className="py-2 text-center border border-purple-700 rounded-md bg-primary-foreground placeholder-secondary" 
               onChange={(e) => setPassword(e.target.value)}
               value={password}
             />
@@ -121,18 +120,18 @@ export default function AuthModal({ isOpen, isRegister, onClose, onLoginSuccess 
               handleSubmit();
             })}
           >
-            <input type="text" name="username" placeholder="Nom" className="py-2 text-center rounded-md border border-purple-700 bg-primary-foreground placeholder-secondary" 
+            <input type="text" name="username" placeholder="Nom" className="py-2 text-center border border-purple-700 rounded-md bg-primary-foreground placeholder-secondary" 
               onChange={(e) => setUsername(e.target.value)}
               value={username}/>
-            <input type="email" name="email" placeholder="Email" className="py-2 text-center rounded-md border border-purple-700 bg-primary-foreground placeholder-secondary" 
+            <input type="email" name="email" placeholder="Email" className="py-2 text-center border border-purple-700 rounded-md bg-primary-foreground placeholder-secondary" 
               onChange={(e) => setEmail(e.target.value)}
               value={email}
             />
-            <input type="password" name="password" placeholder="Mot de passe" className="py-2 text-center rounded-md border border-purple-700 bg-primary-foreground placeholder-secondary" 
+            <input type="password" name="password" placeholder="Mot de passe" className="py-2 text-center border border-purple-700 rounded-md bg-primary-foreground placeholder-secondary" 
               onChange={(e) => setPassword(e.target.value)}
               value={password}
             />
-            <input type="password" name="confirmPassword" placeholder="Confirmer le mot de passe" className="py-2 text-center rounded-md border border-purple-700 bg-primary-foreground placeholder-secondary" 
+            <input type="password" name="confirmPassword" placeholder="Confirmer le mot de passe" className="py-2 text-center border border-purple-700 rounded-md bg-primary-foreground placeholder-secondary" 
               onChange={(e) => setConfirmationPassword(e.target.value)}
               value={confirmationPassword}
             />
