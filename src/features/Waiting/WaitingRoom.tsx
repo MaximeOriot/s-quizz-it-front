@@ -24,29 +24,13 @@ function WaitingRoom() {
     roomLoading, 
     allPlayersReady,
     setPlayerReady,
-    refreshRooms
+    refreshRooms,
+    sendWebSocketMessage
   } = useWebSocketStore({ roomId });
 
   // Trouver la salle actuelle dans la liste des salles
   const roomInfo = rooms.find(room => room.id.toString() === roomId);
-  
-  // Récupérer l'id du joueur courant depuis localStorage (défini à la connexion WebSocket)
-  const userId = localStorage.getItem('userId');
-  
-  // Utiliser uniquement les joueurs du serveur pour l'affichage
-  const players = currentRoom?.players || [];
-  
-  // Trouver le joueur courant par id
-  const currentPlayer = players.find(player => player.id === userId);
-  const serverIsReady = currentPlayer?.isReady || false;
-  
-  // État local pour la mise à jour optimiste de l'interface
-  const [localIsReady, setLocalIsReady] = useState(false);
-  
-  // Utiliser l'état local si disponible, sinon l'état du serveur
-  const isReady = localIsReady || serverIsReady;
-  
-  // Effet pour surveiller les changements dans les données de la salle
+
   useEffect(() => {
     if (roomInfo) {
       console.log('Données de la salle mises à jour:', roomInfo);
@@ -58,20 +42,56 @@ function WaitingRoom() {
     if (roomLoading) {
       const timeout = setTimeout(() => {
         console.warn('⚠️ Timeout de sécurité: Chargement de la salle depuis plus de 30 secondes');
+        console.warn('⚠️ État actuel:', { isConnected, hasReceivedData, roomLoading, currentRoom });
       }, 30000); // 30 secondes
 
       return () => clearTimeout(timeout);
     }
-  }, [roomLoading]);
+  }, [roomLoading, isConnected, hasReceivedData, currentRoom]);
 
-  const getReady = () => {
-    // Basculement du statut local (prêt ↔ pas prêt)
-    setLocalIsReady(!localIsReady);
-    // Envoyer la commande au serveur
-    setPlayerReady();
-  };
+  // Effet pour demander périodiquement les données mises à jour
+  useEffect(() => {
+    if (roomId && isConnected && currentRoom) {
+      const interval = setInterval(() => {
+        console.log('🔄 Demande périodique des données mises à jour...');
+        sendWebSocketMessage(`get_players-${roomId}`);
+      }, 5000); // Toutes les 5 secondes
 
-  const actualTotalPlayers = players.length;
+      return () => clearInterval(interval);
+    }
+  }, [roomId, isConnected, currentRoom, sendWebSocketMessage]);
+
+  // Récupérer l'id du joueur courant depuis localStorage (défini à la connexion WebSocket)
+  const userId = localStorage.getItem('userId');
+  const userProfile = localStorage.getItem('userProfile');
+  
+  // Utiliser l'ID du profil plutôt que l'ID utilisateur pour la correspondance
+  let currentPlayerId = userId;
+  if (userProfile) {
+    try {
+      const profile = JSON.parse(userProfile);
+      currentPlayerId = profile.idUser || userId; // Utiliser l'ID du profil
+    } catch (error) {
+      console.error('Erreur parsing profile:', error);
+    }
+  }
+  
+  // Trouver le joueur actuel dans la liste des joueurs
+  const currentPlayer = currentRoom?.players.find(player => player.id === currentPlayerId);
+  
+  // État local pour le statut "prêt" (optimiste)
+  const [localIsReady, setLocalIsReady] = useState(false);
+  
+  // Synchroniser l'état local avec les données du serveur
+  useEffect(() => {
+    if (currentPlayer) {
+      setLocalIsReady(currentPlayer.isReady);
+    }
+  }, [currentPlayer]);
+  
+  // Déterminer si le joueur est prêt (local ou serveur)
+  const isReady = currentPlayer ? currentPlayer.isReady : localIsReady;
+  const actualTotalPlayers = currentRoom?.players.length || 0;
   const maxPlayers = roomInfo?.j_max || 10;
   const missingPlayers = Math.max(0, maxPlayers - actualTotalPlayers);
 
@@ -83,6 +103,62 @@ function WaitingRoom() {
       return "Rejoindre la salle...";
     }
     return "Récupération des informations de la salle";
+  };
+
+  const getReady = () => {
+    // Basculement du statut local (prêt ↔ pas prêt)
+    setLocalIsReady(!localIsReady);
+    // Envoyer la commande au serveur
+    setPlayerReady();
+  };
+
+  // Debug: afficher les données des joueurs
+  console.log('Current room players:', currentRoom?.players);
+  console.log('Current player:', currentPlayer);
+  console.log('Is ready:', isReady);
+  console.log('userId:', userId);
+  console.log('currentPlayerId:', currentPlayerId);
+  console.log('Player IDs in room:', currentRoom?.players?.map(p => p.id));
+  console.log('Looking for userId:', currentPlayerId);
+  console.log('User profile:', userProfile);
+
+  // Fonction de test pour simuler la réponse du backend
+  const testBackendResponse = () => {
+    console.log('🧪 Test: Simulation de la réponse du backend');
+    
+    // Afficher les données utilisateur stockées
+    const userId = localStorage.getItem('userId');
+    const userProfile = localStorage.getItem('userProfile');
+    const token = localStorage.getItem('token');
+    
+    console.log('🧪 Données utilisateur stockées:');
+    console.log('  - userId:', userId);
+    console.log('  - userProfile:', userProfile);
+    console.log('  - token:', token ? 'Présent' : 'Absent');
+    
+    if (userProfile) {
+      try {
+        const profile = JSON.parse(userProfile);
+        console.log('  - profile parsé:', profile);
+      } catch (error) {
+        console.error('  - Erreur parsing profile:', error);
+      }
+    }
+    
+    // Simuler l'envoi du statut ready avec le format simple
+    if (roomId) {
+      console.log('🧪 Envoi du message ready-{roomId}...');
+      sendWebSocketMessage(`ready-${roomId}`);
+    }
+  };
+
+  // Fonction pour forcer la mise à jour des données de la salle
+  const forceUpdateRoomData = () => {
+    console.log('🔄 Force mise à jour des données de la salle...');
+    if (roomId) {
+      sendWebSocketMessage(`get_salon_info-${roomId}`);
+      sendWebSocketMessage(`get_players-${roomId}`);
+    }
   };
 
   return (
@@ -103,7 +179,12 @@ function WaitingRoom() {
             </p>
             <Button
               variant="secondary"
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                console.log('🔧 Forçage de la sortie du chargement...');
+                console.log('🔧 État actuel:', { isConnected, hasReceivedData, roomLoading, currentRoom });
+                // Forcer la sortie du chargement en cas de problème
+                window.location.reload();
+              }}
             >
               Recharger la page
             </Button>
@@ -151,15 +232,15 @@ function WaitingRoom() {
               </div>
             </div>
 
-            <h2 className="mb-4 text-xl font-semibold">En attente de joueurs :</h2>
-            {players.length > 0 ? (
-              <ul>
-                {players.map((player: Player, index: number) => {
+                          <h2 className="mb-4 text-xl font-semibold">En attente de joueurs :</h2>
+              {currentRoom?.players && currentRoom.players.length > 0 ? (
+                <ul>
+                  {currentRoom.players.map((player: Player, index: number) => {
                   // Pour le joueur courant, utiliser l'état local optimiste
-                  const playerIsReady = player.id === userId 
+                  const playerIsReady = player.id === currentPlayerId 
                     ? (localIsReady || player.isReady)
                     : player.isReady;
-                  
+
                   return (
                     <li key={index} className="flex items-center mb-2">
                       <img
@@ -167,8 +248,8 @@ function WaitingRoom() {
                         alt={`Avatar de ${player.pseudo}`}
                         className="object-cover mr-3 w-8 h-8 rounded-full border-2 border-thirdary"
                       />
-                      <span className={`text-secondary ${player.id === userId ? 'font-bold' : ''}`}>
-                        {player.id === userId ? `${player.pseudo} (Vous)` : player.pseudo}
+                      <span className={`text-secondary ${player.id === currentPlayerId ? 'font-bold' : ''}`}>
+                        {player.id === currentPlayerId ? `${player.pseudo} (Vous)` : player.pseudo}
                       </span>
                       <input
                         type="checkbox"
@@ -211,9 +292,33 @@ function WaitingRoom() {
                 variant="secondary"
                 textSize="sm"
                 width="6xl"
-                onClick={refreshRooms}
+                onClick={() => {
+                  console.log('Actualisation de la liste des salles...');
+                  refreshRooms();
+                }}
               >
                 Actualiser la liste des salles
+              </Button>
+              
+              {/* Boutons de test pour le développement */}
+              <Button
+                variant="secondary"
+                textSize="sm"
+                width="6xl"
+                onClick={testBackendResponse}
+                className="text-white bg-yellow-500 hover:bg-yellow-600"
+              >
+                🧪 Test Backend Response
+              </Button>
+              
+              <Button
+                variant="secondary"
+                textSize="sm"
+                width="6xl"
+                onClick={forceUpdateRoomData}
+                className="text-white bg-blue-500 hover:bg-blue-600"
+              >
+                🔄 Force Update Room Data
               </Button>
             </div>
           </div>

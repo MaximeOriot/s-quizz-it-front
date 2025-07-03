@@ -704,7 +704,16 @@ export const useWebSocketStore = ({ roomId, onRoomCreated }: UseWebSocketStorePr
 
   const setPlayerReady = useCallback(() => {
     if (roomId) {
+      console.log('🎮 Envoi du statut ready au backend...');
+      
+      // Utiliser le format simple que le backend comprend
       sendWebSocketMessage(`ready-${roomId}`);
+      
+      // Demander les données mises à jour des joueurs après un délai
+      setTimeout(() => {
+        console.log('🔄 Demande des données mises à jour des joueurs...');
+        sendWebSocketMessage(`get_players-${roomId}`);
+      }, 1000); // Délai plus long pour laisser le temps au backend de traiter
     }
   }, [roomId, sendWebSocketMessage]);
 
