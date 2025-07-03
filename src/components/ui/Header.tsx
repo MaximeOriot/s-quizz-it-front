@@ -5,6 +5,13 @@ import { logout } from '../../features/auth/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { usePlayerContext } from '../../contexts/usePlayerContext';
 
+interface RootState {
+  auth: {
+    user: string | { name?: string; username?: string; display_name?: string; email?: string } | null;
+    isAuthenticated: boolean;
+  };
+}
+
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
